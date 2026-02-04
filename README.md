@@ -242,7 +242,6 @@ expense_tracker/
 
 ## 🎨 Screenshots
 
-> Add screenshots of your app here to showcase the UI and features
 
 ## 🔧 Configuration
 
@@ -325,7 +324,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 If you encounter any issues or have questions:
 - Open an issue on GitHub
 - Check existing issues for solutions
-- Contact: [Your Email]
+- Contact: [imdeepakdeepu01@gmail.com]
 
 ---
 
