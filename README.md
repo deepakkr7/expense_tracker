@@ -311,7 +311,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Author
 
-**Deepak Kumar**
+**Deepak K R**
 - GitHub: [@deepakkr7](https://github.com/deepakkr7)
 
 ## 🙏 Acknowledgments
