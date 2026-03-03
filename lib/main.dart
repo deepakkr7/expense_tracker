@@ -2,6 +2,7 @@ import 'package:expense_tracker/firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/expense_provider.dart';
@@ -35,6 +36,9 @@ void main() async {
     print('Firebase initialization error: $e');
     print('Please run: flutterfire configure');
   }
+
+  // Initialize notifications
+  await NotificationService().init();
 
   runApp(const MyApp());
 }

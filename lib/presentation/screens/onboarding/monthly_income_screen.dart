@@ -355,7 +355,7 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
                     const SizedBox(height: 16),
 
                     Text(
-                      'What is your $monthName savings goal?',
+                      'What is your $monthName monthly limit?',
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         color: AppTheme.textSecondaryColor,
                       ),
@@ -363,7 +363,7 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
                     ),
                     const SizedBox(height: 60),
 
-                    // Savings illustration
+                    // Limit illustration
                     Container(
                       height: 150,
                       decoration: BoxDecoration(
@@ -373,7 +373,7 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
                       ),
                       child: const Center(
                         child: Icon(
-                          Icons.savings,
+                          Icons.request_page,
                           size: 80,
                           color: Colors.white,
                         ),
@@ -423,7 +423,7 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Savings Goal',
+                            'Monthly Limit',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,

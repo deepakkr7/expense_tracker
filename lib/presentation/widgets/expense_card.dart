@@ -53,12 +53,30 @@ class ExpenseCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                '₹${expense.amount.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    expense.isIncome
+                        ? Icons.arrow_upward
+                        : Icons.arrow_downward,
+                    color: expense.isIncome
+                        ? AppTheme.successColor
+                        : AppTheme.errorColor,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '₹${expense.amount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: expense.isIncome
+                          ? AppTheme.successColor
+                          : AppTheme.errorColor,
+                    ),
+                  ),
+                ],
               ),
               if (expense.isSplit)
                 Container(

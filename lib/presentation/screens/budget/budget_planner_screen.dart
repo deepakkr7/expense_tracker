@@ -17,8 +17,6 @@ class BudgetPlannerScreen extends StatefulWidget {
 }
 
 class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
-  final _incomeController = TextEditingController();
-  final _savingsController = TextEditingController();
   final Map<String, TextEditingController> _categoryControllers = {};
   Map<String, double> _suggestedBudget = {};
   bool _showSuggestions = false;
@@ -45,8 +43,6 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
 
   @override
   void dispose() {
-    _incomeController.dispose();
-    _savingsController.dispose();
     for (var controller in _categoryControllers.values) {
       controller.dispose();
     }
@@ -54,15 +50,19 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
   }
 
   void _generateSuggestions() {
-    final income = double.tryParse(_incomeController.text);
-    final savings = double.tryParse(_savingsController.text) ?? 0;
+    final authProvider = context.read<AuthProvider>();
+    final user = authProvider.currentUser;
 
-    if (income == null || income <= 0) {
+    if (user == null || user.savingsGoal <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter valid income')),
+        const SnackBar(
+          content: Text('Please set your Monthly Limit in Profile first'),
+        ),
       );
       return;
     }
+
+    final limit = user.savingsGoal;
 
     // Get unpaid debt total
     final borrowedMoneyProvider = context.read<BorrowedMoneyProvider>();
@@ -72,10 +72,10 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
     );
 
     final budgetProvider = context.read<BudgetProvider>();
-    // Pass debt to budget generation
+    // Pass debt to budget generation using limit as available amount
     budgetProvider.generateSuggestionsWithDebt(
-      income,
-      savings,
+      limit,
+      0, // savings is not subtracted
       _totalUnpaidDebt,
     );
 
@@ -114,15 +114,18 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
   Future<void> _saveBudget() async {
     final authProvider = context.read<AuthProvider>();
     final budgetProvider = context.read<BudgetProvider>();
-    final income = double.tryParse(_incomeController.text) ?? 0;
-    final savings = double.tryParse(_savingsController.text) ?? 0;
+    final user = authProvider.currentUser;
 
-    if (income <= 0) {
+    if (user == null || user.savingsGoal <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter valid income')),
+        const SnackBar(
+          content: Text('Please set your Monthly Limit in Profile'),
+        ),
       );
       return;
     }
+
+    final limit = user.savingsGoal;
 
     // Update budget from controllers if in edit mode
     if (_isEditing) {
@@ -134,15 +137,14 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
       });
     }
 
-    // Validate budget total
+    // Validate budget total against limit
     final totalBudget = _suggestedBudget.values.fold(
       0.0,
       (sum, amount) => sum + amount,
     );
-    final availableAmount = income - savings;
 
-    if (totalBudget > availableAmount) {
-      final excess = totalBudget - availableAmount;
+    if (totalBudget > limit) {
+      final excess = totalBudget - limit;
       final shouldContinue = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -156,7 +158,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  'Budget Exceeds Income!',
+                  'Budget Exceeds Limit!',
                   style: TextStyle(color: AppTheme.warningColor, fontSize: 18),
                 ),
               ),
@@ -167,20 +169,11 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Your total budget (₹${totalBudget.toStringAsFixed(0)}) exceeds your available amount (₹${availableAmount.toStringAsFixed(0)}) by ₹${excess.toStringAsFixed(0)}.',
+                'Your total budget (₹${totalBudget.toStringAsFixed(0)}) exceeds your monthly limit (₹${limit.toStringAsFixed(0)}) by ₹${excess.toStringAsFixed(0)}.',
               ),
               const SizedBox(height: 16),
               const Text(
-                '💡 Suggestions:',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              const Text('• Reduce spending in some categories'),
-              const Text('• Increase your monthly income'),
-              const Text('• Lower your savings goal temporarily'),
-              const SizedBox(height: 16),
-              const Text(
-                'Do you want to go back and adjust?',
+                'Do you want to adjust your numbers or proceed anyway?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ],
@@ -202,107 +195,14 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
       );
 
       if (shouldContinue != true) return;
-    } else if (totalBudget < availableAmount) {
-      // If there's any remaining balance, ask to add to savings
-      final remaining = availableAmount - totalBudget;
-      final addToSavings = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.savings, color: AppTheme.successColor, size: 28),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'You have a balance!',
-                  style: TextStyle(color: AppTheme.successColor),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'You have ₹${remaining.toStringAsFixed(0)} remaining after your budget allocation.',
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                '💰 Would you like to add this to your savings goal for this month?',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.successColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Current savings: ₹${savings.toStringAsFixed(0)}'),
-                    Text(
-                      'New savings: ₹${(savings + remaining).toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.successColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('No, Keep As Is'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.successColor,
-              ),
-              child: const Text('Yes, Add to Savings'),
-            ),
-          ],
-        ),
-      );
-
-      if (addToSavings == true) {
-        // Update savings goal with remaining amount
-        final newSavings = savings + remaining;
-        _savingsController.text = newSavings.toStringAsFixed(0);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Savings goal updated to ₹${newSavings.toStringAsFixed(0)}!',
-              ),
-              backgroundColor: AppTheme.successColor,
-            ),
-          );
-        }
-
-        // Update the savings variable for the budget to be saved
-        final updatedSavings = newSavings;
-
-        // Save with updated savings
-        await _saveBudgetWithSavings(
-          authProvider,
-          budgetProvider,
-          income,
-          updatedSavings,
-        );
-        return;
-      }
     }
 
-    await _saveBudgetWithSavings(authProvider, budgetProvider, income, savings);
+    await _saveBudgetWithSavings(
+      authProvider,
+      budgetProvider,
+      user.monthlyIncome,
+      limit,
+    );
   }
 
   Future<void> _saveBudgetWithSavings(
@@ -524,27 +424,10 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Income input
-            TextFormField(
-              controller: _incomeController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Monthly Income',
-                prefixText: '₹ ',
-                hintText: '50000',
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Savings input
-            TextFormField(
-              controller: _savingsController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Savings Goal',
-                prefixText: '₹ ',
-                hintText: '10000',
-              ),
+            Text(
+              'Your Monthly Limit: ₹${context.read<AuthProvider>().currentUser?.savingsGoal.toStringAsFixed(0) ?? 0}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
 

@@ -124,6 +124,7 @@ class ExpenseRepository {
 
     for (var doc in snapshot.docs) {
       final expense = ExpenseModel.fromMap(doc.data() as Map<String, dynamic>);
+      if (expense.isIncome) continue;
       categoryTotals[expense.category] =
           (categoryTotals[expense.category] ?? 0) + expense.amount;
     }

@@ -10,11 +10,13 @@ import '../../../data/models/friend_model.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/services/notification_service.dart';
 import '../../widgets/zero_budget_warning_dialog.dart';
 import 'receipt_scan_button.dart';
 
 class AddExpenseScreen extends StatefulWidget {
-  const AddExpenseScreen({super.key});
+  final bool isBottomSheet;
+  const AddExpenseScreen({super.key, this.isBottomSheet = false});
 
   @override
   State<AddExpenseScreen> createState() => _AddExpenseScreenState();
@@ -327,7 +329,21 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         ocrData: _ocrData, // Include OCR data if receipt was scanned
       );
 
+      // Get limit and current total to check after adding
+      final currentTotal = expenseProvider.monthlyTotal;
+      final limit = authProvider.currentUser?.savingsGoal ?? 0.0;
+
       await expenseProvider.addExpense(expense);
+
+      // Notification check
+      if (authProvider.currentUser != null && limit > 0) {
+        final newTotal = currentTotal + amount;
+        if (newTotal > limit && currentTotal <= limit) {
+          NotificationService().showLimitExceededNotification(limit, newTotal);
+        } else if (newTotal > limit) {
+          NotificationService().showLimitExceededNotification(limit, newTotal);
+        }
+      }
 
       if (mounted) {
         Navigator.pop(context);
@@ -346,263 +362,266 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Add Expense'), elevation: 0),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Amount
-              TextFormField(
-                controller: _amountController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(fontSize: 18),
-                decoration: InputDecoration(
-                  labelText: 'Amount *',
-                  prefixText: '₹ ',
-                  prefixStyle: TextStyle(
-                    fontSize: 18,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                ),
-                validator: Validators.validateAmount,
-              ),
-              const SizedBox(height: 20),
-
-              // Category Dropdown - Fixed for dark mode
-              DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                decoration: const InputDecoration(labelText: 'Category *'),
-                dropdownColor: isDark ? Colors.grey[900] : Colors.white,
-                style: TextStyle(
-                  fontSize: 16,
+    final body = SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Amount
+            TextFormField(
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(fontSize: 18),
+              decoration: InputDecoration(
+                labelText: 'Amount *',
+                prefixText: '₹ ',
+                prefixStyle: TextStyle(
+                  fontSize: 18,
                   color: isDark ? Colors.white : Colors.black,
                 ),
-                items: AppConstants.expenseCategories.map((category) {
-                  final icon =
-                      AppConstants.categoryIcons[category] ??
-                      Icons.help_outline;
-                  final color =
-                      AppConstants.categoryColors[category] ?? Colors.grey;
+              ),
+              validator: Validators.validateAmount,
+            ),
+            const SizedBox(height: 20),
 
-                  return DropdownMenuItem(
-                    value: category,
-                    child: Row(
-                      children: [
-                        Icon(icon, color: color, size: 20),
-                        const SizedBox(width: 12),
-                        Text(
-                          category,
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
+            // Category Dropdown - Fixed for dark mode
+            DropdownButtonFormField<String>(
+              value: _selectedCategory,
+              decoration: const InputDecoration(labelText: 'Category *'),
+              dropdownColor: isDark ? Colors.grey[900] : Colors.white,
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              items: AppConstants.expenseCategories.map((category) {
+                final icon =
+                    AppConstants.categoryIcons[category] ?? Icons.help_outline;
+                final color =
+                    AppConstants.categoryColors[category] ?? Colors.grey;
+
+                return DropdownMenuItem(
+                  value: category,
+                  child: Row(
+                    children: [
+                      Icon(icon, color: color, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        category,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black,
                         ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedCategory = value;
+                });
+              },
+              validator: Validators.validateCategory,
+            ),
+            const SizedBox(height: 20),
+
+            // Description
+            TextFormField(
+              controller: _descriptionController,
+              style: const TextStyle(fontSize: 16),
+              decoration: const InputDecoration(
+                labelText: 'Description *',
+                hintText: 'What did you spend on?',
+              ),
+              validator: (value) =>
+                  Validators.validateRequired(value, 'Description'),
+            ),
+            const SizedBox(height: 20),
+
+            // Date
+            InkWell(
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                );
+                if (date != null) {
                   setState(() {
-                    _selectedCategory = value;
+                    _selectedDate = date;
                   });
-                },
-                validator: Validators.validateCategory,
-              ),
-              const SizedBox(height: 20),
-
-              // Description
-              TextFormField(
-                controller: _descriptionController,
-                style: const TextStyle(fontSize: 16),
+                }
+              },
+              child: InputDecorator(
                 decoration: const InputDecoration(
-                  labelText: 'Description *',
-                  hintText: 'What did you spend on?',
+                  labelText: 'Date',
+                  suffixIcon: Icon(Icons.calendar_today),
                 ),
-                validator: (value) =>
-                    Validators.validateRequired(value, 'Description'),
-              ),
-              const SizedBox(height: 20),
-
-              // Date
-              InkWell(
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: _selectedDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                  );
-                  if (date != null) {
-                    setState(() {
-                      _selectedDate = date;
-                    });
-                  }
-                },
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Date',
-                    suffixIcon: Icon(Icons.calendar_today),
-                  ),
-                  child: Text(
-                    '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
+                child: Text(
+                  '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                  style: const TextStyle(fontSize: 16),
                 ),
               ),
-              const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 24),
 
-              // Receipt Scan Button
-              ReceiptScanButton(onDataExtracted: _handleOCRData),
-              const SizedBox(height: 24),
+            // Receipt Scan Button
+            ReceiptScanButton(onDataExtracted: _handleOCRData),
+            const SizedBox(height: 24),
 
-              // Split Expense Section
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.grey[850]
-                      : AppTheme.primaryColor.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _isSplitExpense
-                        ? AppTheme.primaryColor
-                        : Colors.transparent,
-                    width: 2,
-                  ),
+            // Split Expense Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.grey[850]
+                    : AppTheme.primaryColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _isSplitExpense
+                      ? AppTheme.primaryColor
+                      : Colors.transparent,
+                  width: 2,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.people,
-                          color: AppTheme.primaryColor,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Split Expense',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                'Share this expense with friends',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isDark
-                                      ? Colors.grey[400]
-                                      : Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch(
-                          value: _isSplitExpense,
-                          onChanged: (value) {
-                            setState(() {
-                              _isSplitExpense = value;
-                              if (!value) {
-                                _selectedFriends.clear();
-                              }
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    if (_isSplitExpense) ...[
-                      const SizedBox(height: 12),
-                      const Divider(),
-                      const SizedBox(height: 12),
-                      if (_selectedFriends.isEmpty)
-                        OutlinedButton.icon(
-                          onPressed: _showSplitExpenseDialog,
-                          icon: const Icon(Icons.person_add),
-                          label: const Text('Select Friends'),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 48),
-                          ),
-                        )
-                      else ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.people,
+                        color: AppTheme.primaryColor,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '${_selectedFriends.length} friend(s) selected',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
+                            const Text(
+                              'Split Expense',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            TextButton(
-                              onPressed: _showSplitExpenseDialog,
-                              child: const Text('Change'),
+                            Text(
+                              'Share this expense with friends',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _selectedFriends.map((friend) {
-                            return Chip(
-                              avatar: CircleAvatar(
-                                backgroundImage: friend.photoUrl != null
-                                    ? NetworkImage(friend.photoUrl!)
-                                    : null,
-                                child: friend.photoUrl == null
-                                    ? Text(friend.name[0].toUpperCase())
-                                    : null,
-                              ),
-                              label: Text(friend.name),
-                              onDeleted: () {
-                                setState(() {
-                                  _selectedFriends.removeWhere(
-                                    (f) => f.id == friend.id,
-                                  );
-                                });
-                              },
-                            );
-                          }).toList(),
+                      ),
+                      Switch(
+                        value: _isSplitExpense,
+                        onChanged: (value) {
+                          setState(() {
+                            _isSplitExpense = value;
+                            if (!value) {
+                              _selectedFriends.clear();
+                            }
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  if (_isSplitExpense) ...[
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                    if (_selectedFriends.isEmpty)
+                      OutlinedButton.icon(
+                        onPressed: _showSplitExpenseDialog,
+                        icon: const Icon(Icons.person_add),
+                        label: const Text('Select Friends'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 48),
                         ),
-                      ],
+                      )
+                    else ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${_selectedFriends.length} friend(s) selected',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          TextButton(
+                            onPressed: _showSplitExpenseDialog,
+                            child: const Text('Change'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _selectedFriends.map((friend) {
+                          return Chip(
+                            avatar: CircleAvatar(
+                              backgroundImage: friend.photoUrl != null
+                                  ? NetworkImage(friend.photoUrl!)
+                                  : null,
+                              child: friend.photoUrl == null
+                                  ? Text(friend.name[0].toUpperCase())
+                                  : null,
+                            ),
+                            label: Text(friend.name),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedFriends.removeWhere(
+                                  (f) => f.id == friend.id,
+                                );
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
                     ],
                   ],
-                ),
+                ],
               ),
-              const SizedBox(height: 32),
+            ),
+            const SizedBox(height: 32),
 
-              // Save Button
-              SizedBox(
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _handleSave,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                  ),
-                  child: const Text(
-                    'Save Expense',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+            // Save Button
+            SizedBox(
+              height: 56,
+              child: ElevatedButton(
+                onPressed: _handleSave,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                ),
+                child: const Text(
+                  'Save Expense',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+
+    if (widget.isBottomSheet) {
+      return body;
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Add Expense'), elevation: 0),
+      body: body,
     );
   }
 }

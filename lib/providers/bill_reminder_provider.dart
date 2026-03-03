@@ -228,6 +228,12 @@ class BillReminderProvider with ChangeNotifier {
       }
     }
 
+    paid.sort((a, b) {
+      final dateA = a.paidDate ?? a.dueDate;
+      final dateB = b.paidDate ?? b.dueDate;
+      return dateB.compareTo(dateA);
+    });
+
     return {'upcoming': upcoming, 'overdue': overdue, 'paid': paid};
   }
 
