@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/validators.dart';
+import '../budget/budget_planner_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -59,10 +60,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final user = authProvider.currentUser;
 
       if (user != null) {
+        final newLimit = double.tryParse(_savingsController.text) ?? 0.0;
+        final limitChanged = newLimit != user.savingsGoal;
+
         final updatedUser = user.copyWith(
           name: _nameController.text.trim(),
           monthlyIncome: double.tryParse(_incomeController.text) ?? 0.0,
-          savingsGoal: double.tryParse(_savingsController.text) ?? 0.0,
+          savingsGoal: newLimit,
           lastIncomeSetMonth: DateTime.now(),
         );
 
@@ -76,6 +80,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           );
           setState(() => _isEditing = false);
+
+          if (limitChanged) {
+            final shouldUpdateBudget = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Limit Changed'),
+                content: const Text(
+                  'You changed your monthly limit. Would you like to update your budget plan to match?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Not Now'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.primaryColor,
+                    ),
+                    child: const Text('Update Budget Plan'),
+                  ),
+                ],
+              ),
+            );
+
+            if (shouldUpdateBudget == true && mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BudgetPlannerScreen()),
+              );
+            }
+          }
         }
       }
     } catch (e) {
@@ -268,7 +304,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(gradient: AppTheme.primaryGradient),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF111827), Color(0xFF374151)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
               child: Column(
                 children: [
                   // Avatar with upload option
@@ -313,9 +355,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryColor,
+                              color: AppTheme.accentColor,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
+                              border: Border.all(
+                                color: const Color(0xFF111827),
+                                width: 3,
+                              ),
                             ),
                             child: const Icon(
                               Icons.camera_alt,
@@ -409,14 +454,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildInfoCard(
-                      icon: Icons.savings,
-                      label: 'Monthly Savings Goal',
+                      icon: Icons.request_page,
+                      label: 'Monthly Limit',
                       child: _isEditing
                           ? TextFormField(
                               controller: _savingsController,
                               keyboardType: TextInputType.number,
                               decoration: const InputDecoration(
-                                hintText: 'Enter savings goal',
+                                hintText: 'Enter monthly limit',
                                 prefixText: '₹ ',
                               ),
                             )
@@ -565,7 +610,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [AppTheme.cardShadow],
       ),
@@ -574,10 +619,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: AppTheme.secondaryColor.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppTheme.primaryColor),
+            child: Icon(icon, color: AppTheme.secondaryColor),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -589,9 +634,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppTheme.textSecondaryColor,
+                    letterSpacing: 0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 child,
               ],
             ),

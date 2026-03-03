@@ -5,13 +5,15 @@ import '../data/repositories/expense_repository.dart';
 class ExpenseProvider with ChangeNotifier {
   final ExpenseRepository _expenseRepository = ExpenseRepository();
 
-  List<ExpenseModel> _expenses = [];
+  List<ExpenseModel> _expenses = []; // Stores monthly expenses
+  List<ExpenseModel> _allExpenses = []; // Stores all time expenses
   Map<String, double> _categoryTotals = {};
   double _monthlyTotal = 0.0;
   bool _isLoading = false;
   String? _errorMessage;
 
   List<ExpenseModel> get expenses => _expenses;
+  List<ExpenseModel> get allExpenses => _allExpenses;
   Map<String, double> get categoryTotals => _categoryTotals;
   double get monthlyTotal => _monthlyTotal;
   bool get isLoading => _isLoading;
@@ -80,7 +82,7 @@ class ExpenseProvider with ChangeNotifier {
         .getUserExpensesStream(userId)
         .listen(
           (expenses) {
-            _expenses = expenses;
+            _allExpenses = expenses;
             notifyListeners();
           },
           onError: (error) {
@@ -101,6 +103,7 @@ class ExpenseProvider with ChangeNotifier {
             // Calculate category totals
             _categoryTotals = {};
             for (var expense in expenses) {
+              if (expense.isIncome) continue; // Skip income
               _categoryTotals[expense.category] =
                   (_categoryTotals[expense.category] ?? 0) + expense.amount;
             }
@@ -108,7 +111,7 @@ class ExpenseProvider with ChangeNotifier {
             // Calculate monthly total
             _monthlyTotal = expenses.fold(
               0.0,
-              (sum, expense) => sum + expense.amount,
+              (sum, expense) => expense.isIncome ? sum : sum + expense.amount,
             );
 
             notifyListeners();
@@ -163,6 +166,7 @@ class ExpenseProvider with ChangeNotifier {
   // Clear expenses
   void clearExpenses() {
     _expenses = [];
+    _allExpenses = [];
     _categoryTotals = {};
     _monthlyTotal = 0.0;
     notifyListeners();

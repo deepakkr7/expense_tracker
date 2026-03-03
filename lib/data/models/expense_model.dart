@@ -10,6 +10,7 @@ class ExpenseModel extends Equatable {
   final bool isSplit;
   final Map<String, dynamic>? splitDetails;
   final Map<String, dynamic>? ocrData; // OCR extracted data (for reference)
+  final bool isIncome;
 
   const ExpenseModel({
     required this.id,
@@ -21,6 +22,7 @@ class ExpenseModel extends Equatable {
     this.isSplit = false,
     this.splitDetails,
     this.ocrData,
+    this.isIncome = false,
   });
 
   // Convert to Map for Firestore
@@ -35,6 +37,7 @@ class ExpenseModel extends Equatable {
       'isSplit': isSplit,
       'splitDetails': splitDetails,
       'ocrData': ocrData,
+      'isIncome': isIncome,
     };
   }
 
@@ -54,6 +57,7 @@ class ExpenseModel extends Equatable {
       ocrData: map['ocrData'] != null
           ? Map<String, dynamic>.from(map['ocrData'])
           : null,
+      isIncome: map['isIncome'] ?? false,
     );
   }
 
@@ -68,6 +72,7 @@ class ExpenseModel extends Equatable {
     bool? isSplit,
     Map<String, dynamic>? splitDetails,
     Map<String, dynamic>? ocrData,
+    bool? isIncome,
   }) {
     return ExpenseModel(
       id: id ?? this.id,
@@ -79,6 +84,7 @@ class ExpenseModel extends Equatable {
       isSplit: isSplit ?? this.isSplit,
       splitDetails: splitDetails ?? this.splitDetails,
       ocrData: ocrData ?? this.ocrData,
+      isIncome: isIncome ?? this.isIncome,
     );
   }
 
@@ -93,5 +99,6 @@ class ExpenseModel extends Equatable {
     isSplit,
     splitDetails,
     ocrData,
+    isIncome,
   ];
 }

@@ -108,13 +108,30 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
         date: _selectedDate,
       );
 
+      final authProvider = context.read<AuthProvider>();
+
+      if (widget.expense.isIncome) {
+        final user = authProvider.currentUser;
+        if (user != null) {
+          final difference = amount - widget.expense.amount;
+          if (difference != 0) {
+            final updatedUser = user.copyWith(
+              monthlyIncome: user.monthlyIncome + difference,
+            );
+            await authProvider.updateUser(updatedUser);
+          }
+        }
+      }
+
       await expenseProvider.updateExpense(updatedExpense);
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Expense updated successfully!'),
+          SnackBar(
+            content: Text(
+              '${widget.expense.isIncome ? 'Income' : 'Expense'} updated successfully!',
+            ),
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -137,11 +154,11 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text(
-          'Delete Expense',
+          'Delete Transaction',
           style: TextStyle(color: Colors.grey),
         ),
         content: const Text(
-          'Are you sure you want to delete this expense? This action cannot be undone.',
+          'Are you sure you want to delete this transaction? This action cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -164,6 +181,17 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
         final authProvider = context.read<AuthProvider>();
         final expenseProvider = context.read<ExpenseProvider>();
 
+        // Update user's remote monthlyIncome first, before deleting the resource
+        if (widget.expense.isIncome) {
+          final user = authProvider.currentUser;
+          if (user != null) {
+            final updatedUser = user.copyWith(
+              monthlyIncome: user.monthlyIncome - widget.expense.amount,
+            );
+            await authProvider.updateUser(updatedUser);
+          }
+        }
+
         await expenseProvider.deleteExpense(
           authProvider.currentUser!.id,
           widget.expense.id,
@@ -173,7 +201,7 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Expense deleted'),
+              content: Text('Transaction deleted'),
               backgroundColor: AppTheme.errorColor,
             ),
           );
@@ -196,12 +224,12 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Expense'),
+        title: const Text('Update Transaction'),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete, color: AppTheme.errorColor),
             onPressed: _isLoading ? null : _deleteExpense,
-            tooltip: 'Delete Expense',
+            tooltip: 'Delete',
           ),
         ],
       ),
@@ -232,52 +260,55 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Category Dropdown
-              DropdownButtonFormField<String>(
-                value:
-                    AppConstants.expenseCategories.contains(_selectedCategory)
-                    ? _selectedCategory
-                    : AppConstants.expenseCategories.first,
-                decoration: const InputDecoration(
-                  labelText: 'Category',
-                  prefixIcon: Icon(Icons.category),
-                ),
-                items: AppConstants.expenseCategories.map((category) {
-                  final icon =
-                      AppConstants.categoryIcons[category] ?? Icons.help;
-                  final color =
-                      AppConstants.categoryColors[category] ?? Colors.grey;
+              // Category Dropdown (hide for income)
+              if (!widget.expense.isIncome) ...[
+                DropdownButtonFormField<String>(
+                  value:
+                      AppConstants.expenseCategories.contains(_selectedCategory)
+                      ? _selectedCategory
+                      : AppConstants.expenseCategories.first,
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    prefixIcon: Icon(Icons.category),
+                  ),
+                  items: AppConstants.expenseCategories.map((category) {
+                    final icon =
+                        AppConstants.categoryIcons[category] ?? Icons.help;
+                    final color =
+                        AppConstants.categoryColors[category] ?? Colors.grey;
 
-                  return DropdownMenuItem(
-                    value: category,
-                    child: Row(
-                      children: [
-                        Icon(icon, color: color, size: 20),
-                        const SizedBox(width: 12),
-                        Text(
-                          category,
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white
-                                : Colors.black87,
+                    return DropdownMenuItem(
+                      value: category,
+                      child: Row(
+                        children: [
+                          Icon(icon, color: color, size: 20),
+                          const SizedBox(width: 12),
+                          Text(
+                            category,
+                            style: TextStyle(
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black87,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedCategory = value;
-                    });
-                  }
-                },
-                validator: (value) =>
-                    value == null ? 'Please select a category' : null,
-              ),
-              const SizedBox(height: 24),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedCategory = value;
+                      });
+                    }
+                  },
+                  validator: (value) =>
+                      value == null ? 'Please select a category' : null,
+                ),
+                const SizedBox(height: 24),
+              ],
 
               // Description Field
               TextFormField(
@@ -322,7 +353,7 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
-                          'Update Expense',
+                          'Update Transaction',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
