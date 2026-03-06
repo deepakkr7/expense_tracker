@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../data/models/bill_reminder_model.dart';
 import '../data/models/expense_model.dart';
 import '../data/repositories/bill_reminder_repository.dart';
+import '../core/services/notification_service.dart';
 import 'expense_provider.dart';
 
 class BillReminderProvider with ChangeNotifier {
@@ -39,6 +40,7 @@ class BillReminderProvider with ChangeNotifier {
       notifyListeners();
 
       await _repository.addBillReminder(bill);
+      _scheduleNotification(bill);
 
       _isLoading = false;
       notifyListeners();
@@ -58,6 +60,7 @@ class BillReminderProvider with ChangeNotifier {
       notifyListeners();
 
       await _repository.updateBillReminder(bill);
+      _scheduleNotification(bill);
 
       _isLoading = false;
       notifyListeners();
@@ -77,6 +80,7 @@ class BillReminderProvider with ChangeNotifier {
       notifyListeners();
 
       await _repository.deleteBillReminder(userId, billId);
+      NotificationService().cancelNotification(billId.hashCode);
 
       _isLoading = false;
       notifyListeners();
@@ -146,6 +150,35 @@ class BillReminderProvider with ChangeNotifier {
       dueDate: bill.dueDate.add(Duration(days: days)),
     );
     await updateBillReminder(snoozedBill);
+  }
+
+  // Handle notification scheduling
+  void _scheduleNotification(BillReminderModel bill) {
+    if (bill.isPaid) {
+      NotificationService().cancelNotification(bill.id.hashCode);
+      return;
+    }
+
+    final reminderDate = bill.dueDate.subtract(
+      Duration(days: bill.reminderDaysBefore),
+    );
+
+    if (reminderDate.isAfter(DateTime.now())) {
+      NotificationService().scheduleBillReminder(
+        id: bill.id.hashCode,
+        title: 'Reminder: ${bill.billName}',
+        body:
+            '₹${bill.amount.toStringAsFixed(0)} due on ${bill.dueDate.day}/${bill.dueDate.month}/${bill.dueDate.year}',
+        scheduledDate: reminderDate,
+      );
+    } else if (bill.dueDate.isAfter(DateTime.now())) {
+      NotificationService().scheduleBillReminder(
+        id: bill.id.hashCode,
+        title: 'Bill Due: ${bill.billName}',
+        body: '₹${bill.amount.toStringAsFixed(0)} is due today!',
+        scheduledDate: bill.dueDate,
+      );
+    }
   }
 
   // Load all bills

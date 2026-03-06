@@ -47,6 +47,10 @@
 	<string>We need camera access to scan QR codes for payments</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need access to your photo library to attach receipt images to expenses</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need your location to suggest adding an expense when you leave a store.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>We need your location in the background to automatically remind you to log expenses when you leave a store.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>

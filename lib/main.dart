@@ -4,6 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:permission_handler/permission_handler.dart';
+import 'core/services/location_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/expense_provider.dart';
 import 'providers/budget_provider.dart';
@@ -39,6 +42,17 @@ void main() async {
 
   // Initialize notifications
   await NotificationService().init();
+  tz.initializeTimeZones();
+
+  // Explicitly request permissions on startup for Android 13+ and iOS
+  await Permission.notification.request();
+  await Permission.locationWhenInUse.request();
+
+  // Schedule daily 10 PM reminder
+  await NotificationService().scheduleDailyTenPMReminder();
+
+  // Initialize Background Location tracker
+  await LocationService().init();
 
   runApp(const MyApp());
 }
