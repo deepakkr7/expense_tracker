@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../analytics/analytics_screen.dart';
+
 import '../budget/budget_planner_screen.dart';
 import '../bill_reminders/bill_reminders_screen.dart';
 import '../home/home_screen.dart';
@@ -36,6 +36,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return Scaffold(
       body: _screens[_currentIndex],
       floatingActionButton: FloatingActionButton(
+        heroTag: 'main_fab',
         onPressed: _openQRScanner,
         elevation: 4,
         child: Container(

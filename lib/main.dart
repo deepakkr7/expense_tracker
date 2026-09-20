@@ -1,10 +1,13 @@
 import 'package:expense_tracker/firebase_options.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'core/services/location_service.dart';
 import 'providers/auth_provider.dart';
@@ -15,9 +18,9 @@ import 'providers/monthly_expense_provider.dart';
 import 'providers/borrowed_money_provider.dart';
 import 'providers/bill_reminder_provider.dart';
 import 'providers/savings_goal_provider.dart';
-import 'providers/friend_provider.dart';
 import 'providers/group_provider.dart';
 import 'providers/split_expense_provider.dart';
+import 'providers/theme_provider.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/navigation/main_navigation_screen.dart';
 import 'presentation/screens/onboarding/monthly_income_screen.dart';
@@ -42,7 +45,14 @@ void main() async {
 
   // Initialize notifications
   await NotificationService().init();
-  tz.initializeTimeZones();
+  tz_data.initializeTimeZones();
+
+  try {
+    final timeZoneName = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timeZoneName.toString()));
+  } catch (e) {
+    print('Failed to setup local timezone: $e');
+  }
 
   // Explicitly request permissions on startup for Android 13+ and iOS
   await Permission.notification.request();
@@ -53,6 +63,9 @@ void main() async {
 
   // Initialize Background Location tracker
   await LocationService().init();
+
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
 
   runApp(const MyApp());
 }
@@ -72,21 +85,25 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BorrowedMoneyProvider()),
         ChangeNotifierProvider(create: (_) => BillReminderProvider()),
         ChangeNotifierProvider(create: (_) => SavingsGoalProvider()),
-        ChangeNotifierProvider(create: (_) => FriendProvider()),
         ChangeNotifierProvider(create: (_) => GroupProvider()),
         ChangeNotifierProvider(create: (_) => SplitExpenseProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: 'SpendWise',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        home: const SplashScreen(),
-        routes: {
-          '/login': (context) => const LoginScreen(),
-          '/home': (context) => const MainNavigationScreen(),
-          '/profile': (context) => const ProfileScreen(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'SpendWise',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
+            home: const SplashScreen(),
+            routes: {
+              '/login': (context) => const LoginScreen(),
+              '/home': (context) => const MainNavigationScreen(),
+              '/profile': (context) => const ProfileScreen(),
+            },
+          );
         },
       ),
     );

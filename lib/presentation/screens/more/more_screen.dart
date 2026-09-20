@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/theme_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../analytics/analytics_screen.dart';
 import '../budget/monthly_expense_entry_screen.dart';
@@ -16,7 +17,6 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final user = authProvider.currentUser;
 
     return Scaffold(
       appBar: AppBar(
@@ -55,7 +55,7 @@ class MoreScreen extends StatelessWidget {
             icon: Icons.dashboard_customize_outlined,
             title: 'Monthly Overview',
             subtitle: 'Check your monthly spending',
-            color: Color(0xFF00B894),
+            color: const Color(0xFF00B894),
             onTap: () {
               Navigator.push(
                 context,
@@ -98,7 +98,7 @@ class MoreScreen extends StatelessWidget {
             icon: Icons.bar_chart,
             title: 'Analytics',
             subtitle: 'View charts & insights',
-            color: Color(0xFF6C63FF),
+            color: const Color(0xFF6C63FF),
             onTap: () {
               Navigator.push(
                 context,
@@ -124,20 +124,11 @@ class MoreScreen extends StatelessWidget {
             },
           ),
           _buildMenuItem(
-            icon: Icons.dark_mode,
-            title: 'Dark Mode',
-            subtitle: 'Toggle theme',
+            icon: Icons.brightness_6,
+            title: 'App Theme',
+            subtitle: _getThemeModeString(context),
             color: Colors.grey[800]!,
-            trailing: Switch(
-              value: Theme.of(context).brightness == Brightness.dark,
-              onChanged: (value) {
-                // Theme toggle will be implemented later
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Theme toggle coming soon!')),
-                );
-              },
-              activeColor: AppTheme.primaryColor,
-            ),
+            onTap: () => _showThemeDialog(context),
           ),
 
           const Divider(height: 32),
@@ -165,16 +156,24 @@ class MoreScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // Logout Button
+          // Logout Button — use OutlinedButton.icon to avoid TextStyle
+          // inherit mismatch that occurs when nesting Row > Icon + Text
+          // inside a plain OutlinedButton.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: OutlinedButton.icon(
-              icon: const Icon(Icons.logout, color: Colors.red),
-              label: const Text('Logout', style: TextStyle(color: Colors.red)),
               style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
                 side: const BorderSide(color: Colors.red),
                 padding: const EdgeInsets.symmetric(vertical: 16),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  inherit: true,
+                ),
               ),
+              icon: const Icon(Icons.logout),
+              label: const Text('Logout'),
               onPressed: () async {
                 final confirm = await showDialog<bool>(
                   context: context,
@@ -207,6 +206,80 @@ class MoreScreen extends StatelessWidget {
           const SizedBox(height: 32),
         ],
       ),
+    );
+  }
+
+  String _getThemeModeString(BuildContext context) {
+    final themeMode = context.watch<ThemeProvider>().themeMode;
+    switch (themeMode) {
+      case ThemeMode.light:
+        return 'Light Mode';
+      case ThemeMode.dark:
+        return 'Dark Mode';
+      case ThemeMode.system:
+        return 'System Default';
+    }
+  }
+
+  void _showThemeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Select Theme'),
+          content: Consumer<ThemeProvider>(
+            builder: (context, themeProvider, _) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RadioListTile<ThemeMode>(
+                    title: const Text('System Default'),
+                    value: ThemeMode.system,
+                    groupValue: themeProvider.themeMode,
+                    activeColor: AppTheme.primaryColor,
+                    onChanged: (value) {
+                      if (value != null) {
+                        Navigator.pop(ctx);
+                        Future.microtask(
+                          () => themeProvider.setThemeMode(value),
+                        );
+                      }
+                    },
+                  ),
+                  RadioListTile<ThemeMode>(
+                    title: const Text('Light Mode'),
+                    value: ThemeMode.light,
+                    groupValue: themeProvider.themeMode,
+                    activeColor: AppTheme.primaryColor,
+                    onChanged: (value) {
+                      if (value != null) {
+                        Navigator.pop(ctx);
+                        Future.microtask(
+                          () => themeProvider.setThemeMode(value),
+                        );
+                      }
+                    },
+                  ),
+                  RadioListTile<ThemeMode>(
+                    title: const Text('Dark Mode'),
+                    value: ThemeMode.dark,
+                    groupValue: themeProvider.themeMode,
+                    activeColor: AppTheme.primaryColor,
+                    onChanged: (value) {
+                      if (value != null) {
+                        Navigator.pop(ctx);
+                        Future.microtask(
+                          () => themeProvider.setThemeMode(value),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 

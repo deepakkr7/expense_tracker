@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/budget_provider.dart';
 import '../../../providers/borrowed_money_provider.dart';
+import '../../../providers/bill_reminder_provider.dart';
 import '../../../data/models/budget_model.dart';
+import '../../../data/models/bill_reminder_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 
@@ -21,23 +23,27 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
   Map<String, double> _suggestedBudget = {};
   bool _showSuggestions = false;
   bool _isEditing = false;
+  bool _isGenerating = false;
   double _totalUnpaidDebt = 0.0;
+  late DateTime _selectedMonth;
 
   @override
   void initState() {
     super.initState();
+    _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
     // Initialize controllers for each category
     for (var category in AppConstants.expenseCategories) {
       _categoryControllers[category] = TextEditingController();
     }
-    _loadUnpaidDebt();
+    _loadInitialData();
   }
 
-  void _loadUnpaidDebt() {
+  void _loadInitialData() {
     final authProvider = context.read<AuthProvider>();
     final userId = authProvider.currentUser?.id;
     if (userId != null) {
       context.read<BorrowedMoneyProvider>().loadUnpaidBorrowedMoney(userId);
+      context.read<BillReminderProvider>().loadBills(userId);
     }
   }
 
@@ -49,7 +55,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
     super.dispose();
   }
 
-  void _generateSuggestions() {
+  Future<void> _generateSuggestions() async {
     final authProvider = context.read<AuthProvider>();
     final user = authProvider.currentUser;
 
@@ -63,6 +69,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
     }
 
     final limit = user.savingsGoal;
+    final income = user.monthlyIncome;
 
     // Get unpaid debt total
     final borrowedMoneyProvider = context.read<BorrowedMoneyProvider>();
@@ -71,24 +78,98 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
       (sum, amount) => sum + amount,
     );
 
-    final budgetProvider = context.read<BudgetProvider>();
-    // Pass debt to budget generation using limit as available amount
-    budgetProvider.generateSuggestionsWithDebt(
-      limit,
-      0, // savings is not subtracted
-      _totalUnpaidDebt,
-    );
+    String debtStrategy = 'balanced';
+    if (_totalUnpaidDebt > 0) {
+      final selectedStrategy = await _showDebtStrategyDialog(_totalUnpaidDebt);
+      if (selectedStrategy == null) return; // User cancelled the dialog
+      debtStrategy = selectedStrategy;
+    }
 
     setState(() {
-      _suggestedBudget = Map.from(budgetProvider.suggestedBudget);
-      _showSuggestions = true;
-      _isEditing = false;
-
-      // Update text controllers with suggested values
-      _suggestedBudget.forEach((category, amount) {
-        _categoryControllers[category]?.text = amount.toStringAsFixed(0);
-      });
+      _isGenerating = true;
     });
+
+    // Get unpaid bills and project recurring bills for the selected month
+    final billProvider = context.read<BillReminderProvider>();
+    Map<String, double> categoryBills = {};
+    for (var bill in billProvider.bills) {
+      if (!bill.isPaid) {
+        if (bill.dueDate.month == _selectedMonth.month && bill.dueDate.year == _selectedMonth.year) {
+          categoryBills[bill.category] = (categoryBills[bill.category] ?? 0.0) + bill.amount;
+        } else if (bill.recurrenceType == RecurrenceType.monthly &&
+            (bill.dueDate.isBefore(_selectedMonth) || (bill.dueDate.year == _selectedMonth.year && bill.dueDate.month < _selectedMonth.month))) {
+          // Project recurring monthly bills that started before the selected month
+          categoryBills[bill.category] = (categoryBills[bill.category] ?? 0.0) + bill.amount;
+        }
+      }
+    }
+
+    final budgetProvider = context.read<BudgetProvider>();
+    
+    try {
+      await budgetProvider.generateSuggestionsWithDebt(
+        income,
+        limit, 
+        _totalUnpaidDebt,
+        categoryBills,
+        debtStrategy,
+      );
+
+      if (mounted) {
+        setState(() {
+          _suggestedBudget = Map.from(budgetProvider.suggestedBudget);
+          _showSuggestions = true;
+          _isEditing = false;
+
+          // Update text controllers with suggested values
+          _suggestedBudget.forEach((category, amount) {
+            _categoryControllers[category]?.text = amount.toStringAsFixed(0);
+          });
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+        });
+      }
+    }
+  }
+
+  Future<String?> _showDebtStrategyDialog(double totalDebt) {
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Debt Repayment Strategy'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('You have ₹${totalDebt.toStringAsFixed(0)} in Unpaid Debt. How would you like the AI to handle this?'),
+              const SizedBox(height: 16),
+              ListTile(
+                title: const Text('Aggressive'),
+                subtitle: Text('Pay it off in full (₹${totalDebt.toStringAsFixed(0)})'),
+                onTap: () => Navigator.pop(context, 'aggressive'),
+                leading: const Icon(Icons.flash_on, color: AppTheme.warningColor),
+              ),
+              ListTile(
+                title: const Text('Balanced'),
+                subtitle: const Text('Let AI suggest a reasonable partial amount'),
+                onTap: () => Navigator.pop(context, 'balanced'),
+                leading: const Icon(Icons.balance, color: AppTheme.primaryColor),
+              ),
+              ListTile(
+                title: const Text('Minimum'),
+                subtitle: const Text('Pay minimum possible this month'),
+                onTap: () => Navigator.pop(context, 'minimum'),
+                leading: const Icon(Icons.arrow_downward, color: AppTheme.successColor),
+              ),
+            ],
+          ),
+        );
+      }
+    );
   }
 
   void _toggleEditMode() {
@@ -211,12 +292,12 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
     double income,
     double savingsGoal,
   ) async {
-    final currentMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
+    final targetMonth = _selectedMonth;
 
     // Check if budget already exists for this month
     final existingBudget = await budgetProvider.getBudgetForMonth(
       authProvider.currentUser!.id,
-      currentMonth,
+      targetMonth,
     );
 
     if (existingBudget != null) {
@@ -226,7 +307,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
         builder: (ctx) => AlertDialog(
           title: const Text('Replace Existing Budget?'),
           content: Text(
-            'You already have a budget plan for ${DateFormat('MMMM yyyy').format(currentMonth)}. Do you want to replace it?',
+            'You already have a budget plan for ${DateFormat('MMMM yyyy').format(targetMonth)}. Do you want to replace it?',
           ),
           actions: [
             TextButton(
@@ -262,7 +343,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
       monthlyIncome: income,
       savingsGoal: savingsGoal,
       categoryBudgets: _suggestedBudget,
-      month: currentMonth,
+      month: targetMonth,
     );
 
     try {
@@ -292,11 +373,11 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
   void _viewCurrentBudget() async {
     final authProvider = context.read<AuthProvider>();
     final budgetProvider = context.read<BudgetProvider>();
-    final currentMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
+    final targetMonth = _selectedMonth;
 
     final budget = await budgetProvider.getBudgetForMonth(
       authProvider.currentUser!.id,
-      currentMonth,
+      targetMonth,
     );
 
     if (budget == null) {
@@ -304,7 +385,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'No budget plan for ${DateFormat('MMMM').format(currentMonth)} yet',
+              'No budget plan for ${DateFormat('MMMM').format(targetMonth)} yet',
             ),
           ),
         );
@@ -318,7 +399,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(
-            '${DateFormat('MMMM yyyy').format(currentMonth)} Budget',
+            '${DateFormat('MMMM yyyy').format(targetMonth)} Budget',
             style: TextStyle(color: Colors.grey),
           ),
           content: SingleChildScrollView(
@@ -381,7 +462,9 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final monthName = DateFormat('MMMM').format(DateTime.now());
+    final monthName = DateFormat('MMMM').format(_selectedMonth);
+    final currentMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
+    final nextMonth = DateTime(DateTime.now().year, DateTime.now().month + 1, 1);
 
     return Scaffold(
       appBar: AppBar(
@@ -390,7 +473,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
           IconButton(
             icon: const Icon(Icons.visibility),
             onPressed: _viewCurrentBudget,
-            tooltip: 'View Current Budget',
+            tooltip: 'View Selected Month Budget',
           ),
         ],
       ),
@@ -399,6 +482,39 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Month Selector
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ChoiceChip(
+                  label: const Text('Current Month'),
+                  selected: _selectedMonth == currentMonth,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() {
+                        _selectedMonth = currentMonth;
+                        _showSuggestions = false;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(width: 16),
+                ChoiceChip(
+                  label: const Text('Next Month'),
+                  selected: _selectedMonth == nextMonth,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() {
+                        _selectedMonth = nextMonth;
+                        _showSuggestions = false;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
             // Info banner
             Container(
               padding: const EdgeInsets.all(16),
@@ -435,11 +551,20 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
             SizedBox(
               height: 56,
               child: ElevatedButton.icon(
-                onPressed: _generateSuggestions,
-                icon: const Icon(Icons.auto_awesome, color: Colors.white),
-                label: const Text(
-                  'Generate Budget Plan',
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                onPressed: _isGenerating ? null : _generateSuggestions,
+                icon: _isGenerating
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.auto_awesome, color: Colors.white),
+                label: Text(
+                  _isGenerating ? 'AI is thinking...' : 'Generate AI Budget Plan',
+                  style: const TextStyle(fontSize: 16, color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,

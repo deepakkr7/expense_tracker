@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../data/models/budget_model.dart';
 import '../data/repositories/budget_repository.dart';
+import '../core/services/deepseek_service.dart';
+import '../core/constants/app_constants.dart';
 
 class BudgetProvider with ChangeNotifier {
   final BudgetRepository _budgetRepository = BudgetRepository();
@@ -99,44 +101,63 @@ class BudgetProvider with ChangeNotifier {
   }
 
   // Generate suggested budget with debt awareness
-  void generateSuggestionsWithDebt(
-    double monthlyIncome,
-    double savingsGoal,
+  Future<void> generateSuggestionsWithDebt(
+    double actualIncome,
+    double availableLimit,
     double unpaidDebt,
-  ) {
-    // If there's significant debt (>10% of income), adjust budget
-    if (unpaidDebt > 0) {
-      // Priority allocation: Debt -> Savings -> Expenses
-      double availableForExpenses = monthlyIncome - savingsGoal - unpaidDebt;
+    Map<String, double> upcomingBillsByCategory,
+    String debtStrategy,
+  ) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
 
-      // If debt + savings > 70% of income, suggest reducing savings
-      if (unpaidDebt + savingsGoal > monthlyIncome * 0.7) {
-        savingsGoal = (monthlyIncome * 0.7 - unpaidDebt).clamp(0, savingsGoal);
-        availableForExpenses = monthlyIncome - savingsGoal - unpaidDebt;
+    try {
+      final deepSeekService = DeepSeekService();
+      _suggestedBudget = await deepSeekService.generateBudgetPlan(
+        income: actualIncome,
+        limit: availableLimit,
+        debt: unpaidDebt,
+        bills: upcomingBillsByCategory,
+        categories: AppConstants.expenseCategories,
+        debtStrategy: debtStrategy,
+      );
+    } catch (e) {
+      print('AI generation failed, falling back to static logic: $e');
+      
+      double availableForExpenses = availableLimit;
+      
+      // Deduct bills
+      upcomingBillsByCategory.forEach((category, amount) {
+        availableForExpenses -= amount;
+      });
+      
+      if (unpaidDebt > 0) {
+        availableForExpenses -= unpaidDebt;
       }
 
-      // If still not enough, spread debt over 3 months
-      if (availableForExpenses < monthlyIncome * 0.3) {
-        unpaidDebt = unpaidDebt / 3; // Suggest monthly payment
-        availableForExpenses = monthlyIncome - savingsGoal - unpaidDebt;
+      _suggestedBudget = _budgetRepository.generateSuggestedBudget(
+        availableForExpenses < 0 ? 0 : availableForExpenses,
+        0, 
+      );
+      
+      if (unpaidDebt > 0) {
+        if (debtStrategy == 'aggressive') {
+          _suggestedBudget['Debt Repayment'] = unpaidDebt; // Borrowed money
+        } else if (debtStrategy == 'balanced') {
+          _suggestedBudget['Debt Repayment'] = unpaidDebt > 0 ? (unpaidDebt * 0.5) : 0;
+        } else {
+          _suggestedBudget['Debt Repayment'] = unpaidDebt > 0 ? (unpaidDebt * 0.1) : 0;
+        }
       }
-
-      // Generate budget with adjusted available amount
-      _suggestedBudget = _budgetRepository.generateSuggestedBudget(
-        availableForExpenses,
-        0, // Savings already accounted for
-      );
-
-      // Add debt repayment to budget
-      _suggestedBudget['Debt Repayment'] = unpaidDebt;
-    } else {
-      // No debt, use normal generation
-      _suggestedBudget = _budgetRepository.generateSuggestedBudget(
-        monthlyIncome,
-        savingsGoal,
-      );
+      
+      // Assign explicitly categorized bills
+      upcomingBillsByCategory.forEach((category, amount) {
+        _suggestedBudget[category] = amount;
+      });
     }
 
+    _isLoading = false;
     notifyListeners();
   }
 

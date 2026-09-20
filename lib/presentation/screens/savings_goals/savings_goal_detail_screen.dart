@@ -5,6 +5,7 @@ import '../../../providers/savings_goal_provider.dart';
 import '../../../data/models/savings_goal_model.dart';
 import '../../../core/theme/app_theme.dart';
 import 'dart:math' as math;
+import 'savings_goal_chat_sheet.dart';
 
 class SavingsGoalDetailScreen extends StatefulWidget {
   final SavingsGoalModel goal;
@@ -347,8 +348,37 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
               const SizedBox(height: 24),
             ],
 
-            // Add Deposit Button
+            // AI Coach Button
             if (!goal.isCompleted) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => SavingsGoalChatSheet(goal: goal),
+                    );
+                  },
+                  icon: const Icon(Icons.psychology, color: AppTheme.primaryColor),
+                  label: const Text(
+                    'AI Savings Coach',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Add Deposit Button
               SizedBox(
                 width: double.infinity,
                 height: 56,

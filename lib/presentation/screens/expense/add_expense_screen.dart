@@ -11,6 +11,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/notification_service.dart';
+import '../../../core/services/deepseek_service.dart';
 import '../../widgets/zero_budget_warning_dialog.dart';
 import 'receipt_scan_button.dart';
 
@@ -31,6 +32,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   bool _isSplitExpense = false;
   List<FriendModel> _selectedFriends = [];
   Map<String, dynamic>? _ocrData; // Store OCR data
+  bool _isAutoCategorizing = false;
 
   @override
   void initState() {
@@ -81,6 +83,53 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  Future<void> _autoCategorize() async {
+    final description = _descriptionController.text.trim();
+    if (description.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a description first')),
+      );
+      return;
+    }
+
+    setState(() => _isAutoCategorizing = true);
+    
+    try {
+      final deepSeekService = DeepSeekService();
+      final category = await deepSeekService.categorizeExpense(
+        description,
+        AppConstants.expenseCategories,
+      );
+
+      if (category != null && mounted) {
+        setState(() {
+          _selectedCategory = category;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Auto-categorized as $category!'),
+            backgroundColor: AppTheme.successColor,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not determine category')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Auto-categorize failed')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isAutoCategorizing = false);
+      }
+    }
   }
 
   Future<void> _showSplitExpenseDialog() async {
@@ -430,9 +479,20 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             TextFormField(
               controller: _descriptionController,
               style: const TextStyle(fontSize: 16),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Description *',
                 hintText: 'What did you spend on?',
+                suffixIcon: IconButton(
+                  icon: _isAutoCategorizing 
+                    ? const SizedBox(
+                        width: 20, 
+                        height: 20, 
+                        child: CircularProgressIndicator(strokeWidth: 2)
+                      )
+                    : const Icon(Icons.auto_awesome, color: AppTheme.primaryColor),
+                  onPressed: _isAutoCategorizing ? null : _autoCategorize,
+                  tooltip: 'Auto-categorize',
+                ),
               ),
               validator: (value) =>
                   Validators.validateRequired(value, 'Description'),

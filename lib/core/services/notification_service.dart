@@ -91,7 +91,7 @@ class NotificationService {
         body: body,
         scheduledDate: tzScheduledDate,
         notificationDetails: platformChannelSpecifics,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
     } catch (e) {
       print('Failed to schedule bill reminder notification: $e');
@@ -118,7 +118,7 @@ class NotificationService {
         body: 'Take 10 seconds to add your daily expenses before the day ends!',
         scheduledDate: _nextInstanceOfTenPM(),
         notificationDetails: platformChannelSpecifics,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         matchDateTimeComponents:
             DateTimeComponents.time, // Matches the time every day
       );

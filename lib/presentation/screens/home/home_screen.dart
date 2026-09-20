@@ -8,11 +8,7 @@ import '../../../providers/expense_provider.dart';
 import '../../../providers/budget_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../expense/add_expense_screen.dart';
-import '../budget/budget_planner_screen.dart';
-import '../budget/monthly_expense_entry_screen.dart';
-import '../analytics/analytics_screen.dart';
-import '../borrowed_money/borrowed_money_screen.dart';
-import '../bill_reminders/bill_reminders_screen.dart';
+
 import '../../widgets/expense_card.dart';
 import '../../widgets/alert_banner.dart';
 import '../../widgets/monthly_review_bottom_sheet.dart';
@@ -321,6 +317,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'home_fab',
         onPressed: () {
           _showAddTransactionBottomSheet(context);
         },
@@ -505,49 +502,7 @@ class _IncomeTabState extends State<_IncomeTab> {
   }
 }
 
-class _QuickActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Gradient gradient;
-  final VoidCallback onTap;
 
-  const _QuickActionButton({
-    required this.icon,
-    required this.label,
-    required this.gradient,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [AppTheme.cardShadow],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: Colors.white, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _MonthlyLimitCard extends StatelessWidget {
   final double spent;

@@ -137,7 +137,7 @@ class ExpenseRepository {
     final categoryTotals = await getCategoryTotals(userId, month);
     return categoryTotals.values.fold<double>(
       0.0,
-      (sum, amount) => sum + amount,
+      (total, amount) => total + amount,
     );
   }
 }
