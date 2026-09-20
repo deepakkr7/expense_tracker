@@ -7,9 +7,9 @@
 ![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-A powerful, feature-rich expense tracking and budget management application built with Flutter and Firebase.
+A powerful, feature-rich, AI-assisted expense tracking and budget management application built with Flutter, Firebase, and DeepSeek AI.
 
-[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Screenshots](#-screenshots) • [Contributing](#-contributing)
+[Documentation & Architecture](PROJECT_DOCUMENTATION.md) • [Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Contributing](#-contributing)
 
 </div>
 
@@ -17,56 +17,63 @@ A powerful, feature-rich expense tracking and budget management application buil
 
 ## 📋 Overview
 
-**SpendWise** is a comprehensive personal finance management application designed to help users track expenses, manage budgets, split bills with friends, set savings goals, and gain insights into their spending habits. With a beautiful, intuitive interface and powerful features, SpendWise makes managing your finances effortless.
+**SpendWise** is a comprehensive personal finance management application designed to help users track expenses, manage budgets, split bills with friends, set savings goals, and gain insights into their spending habits. Featuring on-device receipt OCR, UPI QR scanning, DeepSeek AI financial coaching, background location movement reminders, and real-time Firebase sync, SpendWise makes managing your finances effortless.
+
+> 📖 **Looking for in-depth architecture and design docs?** Check out [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md) for full architectural diagrams, Firestore schemas, state management breakdown, and technical deep-dives.
 
 ## ✨ Features
 
+### 🤖 AI-Powered Intelligence (DeepSeek LLM)
+- **AI Budget Planner**: Automatically formulates a category-wise monthly budget optimized for debt strategies (Aggressive, Balanced, Light) and upcoming bills.
+- **AI Expense Auto-Categorization**: Natural language classification of expense descriptions into budget categories with fuzzy fallback.
+- **AI Savings Goal Coach**: Interactive conversational coach within savings goals that advises and motivates users towards their targets.
+
 ### 💸 Core Expense Management
-- **Add & Edit Expenses**: Track your daily expenses with detailed categorization
-- **Receipt OCR**: Scan receipts using ML Kit text recognition to automatically extract expense data
-- **QR Code Scanner**: Quickly scan UPI payment QR codes to add expenses
-- **Contact Integration**: Link expenses to contacts from your phone
-- **Category Management**: Organize expenses by customizable categories
-- **Smart Analytics**: Visualize spending patterns with interactive charts and graphs
+- **Add & Edit Expenses**: Track your daily expenses with detailed categorization and income/expense toggles
+- **Receipt OCR**: Scan receipts using Google ML Kit text recognition on-device to extract amounts, dates, and merchants without uploading images to cloud storage
+- **QR Code Scanner**: Scan UPI payment QR codes (Paytm, PhonePe, Google Pay, BHIM) and launch external payment apps directly
+- **Contact Integration**: Link expenses to friends directly from your phone's address book
+- **Category Management**: Organize expenses by predefined, color-coded categories
 
-### 📊 Budget Planning
-- **Monthly Budgets**: Set category-wise budget limits
-- **Budget Tracking**: Monitor spending against allocated budgets
-- **Budget Warnings**: Get alerts when exceeding budget limits (with ignore option)
-- **Monthly Income**: Set and update monthly income for better financial planning
-- **Expense Distribution**: View how your money is allocated across categories
+### 📊 Smart Budgeting & Alerts
+- **Monthly Budgets**: Set category-wise budget limits or use the 50/30/20 guideline
+- **Budget Tracking**: Monitor real-time spending against allocated budgets via Firestore streams
+- **Threshold Warnings**: In-app banners and push notifications at 80% and 90% budget limits
+- **Zero-Budget Protection**: Alerts users when spending against a category with ₹0 allocation
+- **Monthly Review**: Automatic end-of-month review bottom sheet evaluating savings performance
 
-### 👥 Social Features
+### ⏰ Proactive Reminders & Smart Background Services
+- **Daily 10:00 PM Check-In**: Scheduled local notification prompting users to log daily expenses
+- **Background Location Reminder**: Geolocation movement tracker (100m displacement) prompting to log purchases when leaving stores
+- **Bill Reminders**: Scheduled notifications for recurring and upcoming bills with automatic expense logging upon payment
+
+### 👥 Social Features & Bill Splitting
 - **Split Expenses**: Share bills with friends and track who owes what
-- **Group Management**: Create groups for recurring shared expenses
-- **Friend Contacts**: Manage friends from your contact list
-- **Custom Splits**: Divide expenses equally or create custom split ratios
-- **Settlement Tracking**: Keep track of payments and settlements
+- **Group Management**: Create groups (Roommates, Trip, Office) with custom emojis
+- **Friend Contacts**: Import friends from your contact list
+- **Equal & Custom Splits**: Divide expenses equally or configure custom amounts per friend
+- **Settlement Tracking**: Per-member settlement status tracking
 
-### 💳 Financial Tracking
-- **Borrowed Money**: Track money lent to or borrowed from others
-- **Bill Reminders**: Set up recurring bill payment reminders
-- **Savings Goals**: Create and track progress towards financial goals
-- **Transaction History**: Complete history of all financial activities
+### 💳 Debt & Savings Management
+- **Borrowed Money**: Track money lent or borrowed with automated repayment expense tracking
+- **Savings Goals**: Visual progress rings, milestone dates, deposit history, and suggested monthly savings rates
 
 ### 📈 Analytics & Insights
-- **Category Pie Charts**: Visual breakdown of spending by category
-- **Monthly Trends**: Track spending patterns over time
-- **Budget vs Actual**: Compare planned budgets with actual spending
-- **Customizable Reports**: Generate insights for different time periods
+- **Category Pie Charts**: Interactive breakdown of spending by category via FL Chart
+- **Spending Trends**: 6-month historical spending curve
+- **Budget vs Actual**: Side-by-side bar chart comparison
+- **Top Categories**: Ranked summary of highest expenditure sectors
 
 ### 🔐 Authentication & Security
-- **Firebase Authentication**: Secure user authentication
-- **Google Sign-In**: Quick login with Google account
-- **Cloud Sync**: All data synced securely with Firebase Firestore
-- **Multi-device Support**: Access your data across all your devices
+- **Firebase Authentication**: Secure email/password and Google Sign-In
+- **Private Data Scoping**: All data securely partitioned per user in Cloud Firestore subcollections
+- **Privacy-First OCR**: On-device machine learning with no image storage or remote transmission
+- **Offline Persistence**: Cloud Firestore offline caching supports full functionality without internet
 
 ### 🎨 User Experience
-- **Modern UI**: Beautiful, intuitive interface with smooth animations
-- **Dark Mode**: Full dark mode support
-- **Google Fonts**: Premium typography with Google Fonts integration
-- **Responsive Design**: Optimized for different screen sizes
-- **Offline Support**: Continue working even without internet connection
+- **Material 3 Design**: Modern typography with Google Fonts (Inter)
+- **Theme Modes**: Full Light and Dark mode support with smooth palette transitions
+- **Responsive Design**: Clean layouts tailored for Android, iOS, macOS, Windows, and Web
 
 ## 🛠️ Tech Stack
 
