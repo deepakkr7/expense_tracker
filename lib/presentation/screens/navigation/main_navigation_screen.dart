@@ -1,3 +1,8 @@
+import 'package:provider/provider.dart';
+import '../../../providers/bill_reminder_provider.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../core/services/notification_service.dart';
+import '../expense/add_expense_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../budget/budget_planner_screen.dart';
@@ -14,7 +19,35 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final id = context.read<AuthProvider>().currentUser?.id;
+      if (id != null) context.read<BillReminderProvider>().loadBills(id);
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshReminders();
+  }
+
+  Future<void> _refreshReminders() async {
+    await NotificationService().refreshTimeZone();
+    if (mounted) await context.read<BillReminderProvider>().refreshReminders();
+  }
+
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
@@ -31,13 +64,52 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
+  Future<void> _showAddMenu() async {
+    final choice = await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(title: Text('Add')),
+            for (final item in [
+              (0, Icons.remove_circle_outline, 'Expense'),
+              (1, Icons.add_circle_outline, 'Income'),
+              (2, Icons.document_scanner_outlined, 'Scan receipt'),
+              (3, Icons.qr_code_scanner, 'Scan QR'),
+            ])
+              ListTile(
+                leading: Icon(item.$2),
+                title: Text(item.$3),
+                onTap: () => Navigator.pop(sheetContext, item.$1),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || choice == null) return;
+    if (choice == 3) {
+      _openQRScanner();
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            AddExpenseScreen(isIncome: choice == 1, scanReceipt: choice == 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_currentIndex],
       floatingActionButton: FloatingActionButton(
         heroTag: 'main_fab',
-        onPressed: _openQRScanner,
+        onPressed: _showAddMenu,
+        tooltip: 'Add expense, income or scan',
         elevation: 4,
         child: Container(
           width: 60,
@@ -53,11 +125,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ],
             ),
           ),
-          child: const Icon(
-            Icons.qr_code_scanner,
-            color: Colors.white,
-            size: 28,
-          ),
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

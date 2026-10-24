@@ -1,13 +1,11 @@
+import '../onboarding/monthly_income_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../data/models/expense_model.dart';
 import '../../../providers/expense_provider.dart';
 import '../../../providers/budget_provider.dart';
 import '../../../core/theme/app_theme.dart';
-import '../expense/add_expense_screen.dart';
 
 import '../../widgets/expense_card.dart';
 import '../../widgets/alert_banner.dart';
@@ -19,6 +17,65 @@ class HomeScreen extends StatefulWidget {
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _MonthlyLimitCard extends StatelessWidget {
+  final double spent;
+  final double limit;
+  const _MonthlyLimitCard({required this.spent, required this.limit});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final progress = limit > 0 ? (spent / limit).clamp(0.0, 1.0) : 0.0;
+    final remaining = ((1 - progress) * 100).round();
+    final fmt = NumberFormat('#,##,###', 'en_IN');
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'MONTHLY LIMIT',
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '₹${fmt.format(spent)} / ₹${fmt.format(limit)}',
+            style: TextStyle(
+              color: colors.onSurface,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: colors.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$remaining% Remaining',
+            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -54,13 +111,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Show review bottom sheet after a short delay
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(Duration(seconds: 2), () {
       if (mounted) {
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (context) => const MonthlyReviewBottomSheet(),
+          builder: (context) => MonthlyReviewBottomSheet(),
         );
       }
     });
@@ -100,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(
           'Hi, ${user?.name ?? 'User'}!',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           GestureDetector(
@@ -108,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pushNamed(context, '/profile');
             },
             child: Padding(
-              padding: const EdgeInsets.only(right: 16),
+              padding: EdgeInsets.only(right: 16),
               child: CircleAvatar(
                 radius: 18,
                 backgroundImage:
@@ -121,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         user?.name.isNotEmpty == true
                             ? user!.name[0].toUpperCase()
                             : 'U',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -138,18 +195,76 @@ class _HomeScreenState extends State<HomeScreen> {
           _loadData();
         },
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          physics: AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (authProvider.currentUser != null &&
+                  (authProvider.currentUser!.lastIncomeSetMonth?.month !=
+                          DateTime.now().month ||
+                      authProvider.currentUser!.lastIncomeSetMonth?.year !=
+                          DateTime.now().year))
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Review this month’s income'),
+                        const Text(
+                          'Update your income to keep your budget useful.',
+                        ),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const MonthlyIncomeScreen(),
+                                ),
+                              ),
+                              child: const Text('Update income'),
+                            ),
+                            if (authProvider.currentUser!.monthlyIncome > 0)
+                              TextButton(
+                                onPressed: () async {
+                                  try {
+                                    await authProvider.updateUser(
+                                      authProvider.currentUser!.copyWith(
+                                        lastIncomeSetMonth: DateTime.now(),
+                                        incomeSetupCompleted: true,
+                                      ),
+                                    );
+                                  } catch (_) {
+                                    if (context.mounted)
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Could not save. Please try again.',
+                                          ),
+                                        ),
+                                      );
+                                  }
+                                },
+                                child: const Text('Use last month’s income'),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               // Budget Alerts
               if (overBudgetCategories.isNotEmpty)
                 ...overBudgetCategories.entries
                     .where((entry) => !_dismissedAlerts.contains(entry.key))
                     .map(
                       (entry) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: EdgeInsets.only(bottom: 12),
                         child: AlertBanner(
                           category: entry.key,
                           percentage: entry.value,
@@ -167,10 +282,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF2E7D32), Color(0xFF4CAF50)],
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF205B24), Color(0xFF246528)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -180,20 +295,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Income',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
+                            style: TextStyle(color: Colors.white, fontSize: 14),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
                             child: Text(
                               '₹${user?.monthlyIncome.toStringAsFixed(0) ?? '0'}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -204,13 +316,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 16),
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFC62828), Color(0xFFEF5350)],
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF9B1C1C), Color(0xFFAD2020)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -220,20 +332,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Expenses',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
+                            style: TextStyle(color: Colors.white, fontSize: 14),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
                             child: Text(
                               '₹${monthlyTotal.toStringAsFixed(0)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -246,15 +355,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Quick Actions Row removed
 
               // Live Limit Indicator
               if (user != null && user.savingsGoal > 0)
                 _MonthlyLimitCard(spent: monthlyTotal, limit: user.savingsGoal),
-              if (user != null && user.savingsGoal > 0)
-                const SizedBox(height: 24),
+              if (user != null && user.savingsGoal > 0) SizedBox(height: 24),
 
               // Recent Expenses
               Row(
@@ -268,20 +376,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const AllExpensesScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => AllExpensesScreen()),
                       );
                     },
-                    child: const Text('See All'),
+                    child: Text('See All'),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
 
               // Expenses List
               if (expenseProvider.isLoading)
-                const Center(
+                Center(
                   child: Padding(
                     padding: EdgeInsets.all(32),
                     child: CircularProgressIndicator(),
@@ -290,19 +396,23 @@ class _HomeScreenState extends State<HomeScreen> {
               else if (allExpenses.isEmpty)
                 Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(32),
+                    padding: EdgeInsets.all(32),
                     child: Column(
                       children: [
                         Icon(
                           Icons.receipt_long_outlined,
                           size: 64,
-                          color: Colors.grey[400],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         Text(
                           'No transactions yet',
                           style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(color: Colors.grey[600]),
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                       ],
                     ),
@@ -315,251 +425,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'home_fab',
-        onPressed: () {
-          _showAddTransactionBottomSheet(context);
-        },
-        backgroundColor: AppTheme.primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-    );
-  }
-
-  void _showAddTransactionBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const _AddTransactionBottomSheet(),
-    );
-  }
-}
-
-class _AddTransactionBottomSheet extends StatelessWidget {
-  const _AddTransactionBottomSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.9,
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: DefaultTabController(
-        length: 2,
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TabBar(
-              labelColor: AppTheme.primaryColor,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: AppTheme.primaryColor,
-              tabs: const [
-                Tab(text: 'Expense'),
-                Tab(text: 'Income'),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  const AddExpenseScreen(isBottomSheet: true),
-                  _IncomeTab(),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _IncomeTab extends StatefulWidget {
-  @override
-  State<_IncomeTab> createState() => _IncomeTabState();
-}
-
-class _IncomeTabState extends State<_IncomeTab> {
-  final _amountController = TextEditingController();
-  final _typeController = TextEditingController();
-  bool _isLoading = false;
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _typeController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveIncome() async {
-    final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid amount')),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    try {
-      final authProvider = context.read<AuthProvider>();
-      final user = authProvider.currentUser;
-      if (user != null) {
-        final currentIncome = user.monthlyIncome;
-        final updatedIncome = currentIncome + amount;
-        final updatedUser = user.copyWith(monthlyIncome: updatedIncome);
-        await authProvider.updateUser(updatedUser);
-
-        final title = _typeController.text.trim().isNotEmpty
-            ? _typeController.text.trim()
-            : 'Income';
-        final incomeTransaction = ExpenseModel(
-          id: const Uuid().v4(),
-          userId: user.id,
-          amount: amount,
-          category: 'Income',
-          description: title,
-          date: DateTime.now(),
-          isIncome: true,
-        );
-
-        await context.read<ExpenseProvider>().addExpense(incomeTransaction);
-
-        if (mounted) {
-          Navigator.pop(context); // Close bottom sheet
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('$title saved')));
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: \$e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            controller: _amountController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Income Amount *',
-              prefixText: '₹ ',
-            ),
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            controller: _typeController,
-            decoration: const InputDecoration(
-              labelText: 'Income Type',
-              hintText: 'e.g. Salary, Freelance, Bonus',
-            ),
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _saveIncome,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      'Save Income',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-
-class _MonthlyLimitCard extends StatelessWidget {
-  final double spent;
-  final double limit;
-
-  const _MonthlyLimitCard({required this.spent, required this.limit});
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = (limit > 0) ? (spent / limit).clamp(0.0, 1.0) : 0.0;
-    final remaining = ((1 - progress) * 100).round();
-    final fmt = NumberFormat('#,##,###', 'en_IN');
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'MONTHLY LIMIT',
-            style: TextStyle(
-              color: Color(0xFF9CA3AF),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '₹${fmt.format(spent)} / ₹${fmt.format(limit)}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: const Color(0xFF374151),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF22C55E),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$remaining% Remaining',
-            style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
-          ),
-        ],
       ),
     );
   }

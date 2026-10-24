@@ -1,5 +1,5 @@
 name: expense_tracker
-description: "A new Flutter project."
+description: "SpendWise: expense tracking, budgets, bill reminders and savings goals."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -16,7 +16,6 @@ dependencies:
   firebase_core: ^3.8.1
   firebase_auth: ^5.3.4
   cloud_firestore: ^5.5.2
-  firebase_messaging: ^15.1.7
   
   # Authentication
   google_sign_in: ^6.2.2
@@ -39,7 +38,7 @@ dependencies:
   permission_handler: ^11.3.1
   
   # QR Scanner
-  mobile_scanner: ^5.2.3
+  mobile_scanner: ^7.4.2
   url_launcher: ^6.3.1
   
   # Receipt OCR (no image storage)
@@ -47,14 +46,11 @@ dependencies:
   google_mlkit_text_recognition: ^0.13.1
   flutter_local_notifications: ^20.1.0
   timezone: ^0.10.1
-  geolocator: ^14.0.2
-  flutter_background_service: ^5.1.0
   flutter_timezone: ^5.0.1
   http: ^1.2.1
-  flutter_dotenv: ^5.1.0
-  mobile_rag_engine: ^0.19.1
 
 dev_dependencies:
+  fake_cloud_firestore: ^3.1.0
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
@@ -72,4 +68,4 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
   assets:
-    - .env
+    - assets/fonts/

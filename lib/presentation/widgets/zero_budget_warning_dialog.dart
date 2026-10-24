@@ -17,7 +17,7 @@ class ZeroBudgetWarningDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       icon: Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 48),
-      title: const Text(
+      title: Text(
         'Zero Budget Alert',
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
@@ -30,11 +30,11 @@ class ZeroBudgetWarningDialog extends StatelessWidget {
             children: [
               Text(
                 'You are spending ₹${amount.toStringAsFixed(0)} on "$category" which has ₹0 budget allocation.',
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -43,11 +43,14 @@ class ZeroBudgetWarningDialog extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(Icons.info_outline, color: Colors.orange, size: 20),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Consider allocating budget for this category or adjust your spending.',
-                        style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
@@ -60,7 +63,7 @@ class ZeroBudgetWarningDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
+          child: Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: () {
@@ -70,7 +73,7 @@ class ZeroBudgetWarningDialog extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryColor,
           ),
-          child: const Text(
+          child: Text(
             'Ignore & Continue',
             style: TextStyle(color: Colors.white),
           ),

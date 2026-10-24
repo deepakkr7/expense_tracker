@@ -18,7 +18,7 @@ class AlertBanner extends StatelessWidget {
     final isOverBudget = percentage >= 1.0;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isOverBudget
             ? AppTheme.errorColor.withOpacity(0.1)
@@ -36,7 +36,7 @@ class AlertBanner extends StatelessWidget {
             color: isOverBudget ? AppTheme.errorColor : AppTheme.warningColor,
             size: 24,
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,11 +53,11 @@ class AlertBanner extends StatelessWidget {
                     fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   'You\'ve spent ${(percentage * 100).toStringAsFixed(0)}% of your budget',
                   style: TextStyle(
-                    color: AppTheme.textSecondaryColor,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 12,
                   ),
                 ),
@@ -65,14 +65,14 @@ class AlertBanner extends StatelessWidget {
             ),
           ),
           if (onDismiss != null) ...[
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             IconButton(
-              icon: const Icon(Icons.close, size: 20),
+              icon: Icon(Icons.close, size: 20),
               onPressed: onDismiss,
               color: isOverBudget ? AppTheme.errorColor : AppTheme.warningColor,
               tooltip: 'Dismiss',
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
+              constraints: BoxConstraints(),
             ),
           ],
         ],

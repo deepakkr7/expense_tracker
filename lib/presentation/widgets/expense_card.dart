@@ -13,11 +13,10 @@ class ExpenseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final categoryColor =
-        AppConstants.categoryColors[expense.category] ??
-        const Color(0xFF9E9E9E);
+        AppConstants.categoryColors[expense.category] ?? Color(0xFF9E9E9E);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -30,7 +29,7 @@ class ExpenseCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: ListTile(
           leading: Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: categoryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
@@ -43,11 +42,14 @@ class ExpenseCard extends StatelessWidget {
           ),
           title: Text(
             expense.description,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: TextStyle(fontWeight: FontWeight.w600),
           ),
           subtitle: Text(
             '${expense.category} • ${DateFormat('MMM dd, yyyy').format(expense.date)}',
-            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
           ),
           trailing: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -65,7 +67,7 @@ class ExpenseCard extends StatelessWidget {
                         : AppTheme.errorColor,
                     size: 16,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Text(
                     '₹${expense.amount.toStringAsFixed(2)}',
                     style: TextStyle(
@@ -80,15 +82,12 @@ class ExpenseCard extends StatelessWidget {
               ),
               if (expense.isSplit)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppTheme.secondaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Split',
                     style: TextStyle(
                       fontSize: 10,

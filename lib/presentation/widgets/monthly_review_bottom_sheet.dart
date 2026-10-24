@@ -36,9 +36,9 @@ class _MonthlyReviewBottomSheetState extends State<MonthlyReviewBottomSheet> {
     final savedAmount = double.tryParse(_savingsController.text);
 
     if (savedAmount == null || savedAmount < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid amount')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Please enter a valid amount')));
       return;
     }
 
@@ -130,27 +130,27 @@ class _MonthlyReviewBottomSheetState extends State<MonthlyReviewBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: 60, color: color),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             Text(
               title,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: AppTheme.readableColor(context, color),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               message,
-              style: const TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
           ],
@@ -158,7 +158,7 @@ class _MonthlyReviewBottomSheetState extends State<MonthlyReviewBottomSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Got it!'),
+            child: Text('Got it!'),
           ),
         ],
       ),
@@ -167,16 +167,15 @@ class _MonthlyReviewBottomSheetState extends State<MonthlyReviewBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.read<AuthProvider>().currentUser;
-    final lastMonth = DateTime.now().subtract(const Duration(days: 1));
+    final lastMonth = DateTime.now().subtract(Duration(days: 1));
     final monthName = DateFormat('MMMM').format(lastMonth);
 
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: _showSavingsInput
@@ -187,7 +186,7 @@ class _MonthlyReviewBottomSheetState extends State<MonthlyReviewBottomSheet> {
 
   Widget _buildInitialQuestion(String monthName) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -196,37 +195,40 @@ class _MonthlyReviewBottomSheetState extends State<MonthlyReviewBottomSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           // Icon
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: AppTheme.primaryGradient,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.savings, size: 48, color: Colors.white),
+            child: Icon(Icons.savings, size: 48, color: Colors.white),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Title
           Text(
             '$monthName Review 📊',
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           // Question
           Text(
             'Did you follow your budget plan and save something this month?',
-            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: 32),
 
           // Buttons
           Row(
@@ -235,29 +237,26 @@ class _MonthlyReviewBottomSheetState extends State<MonthlyReviewBottomSheet> {
                 child: OutlinedButton(
                   onPressed: _handleNo,
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Not Really',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  child: Text('Not Really', style: TextStyle(fontSize: 16)),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
                   onPressed: _handleYes,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: AppTheme.primaryColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Yes! 🎉',
                     style: TextStyle(fontSize: 16, color: Colors.white),
                   ),
@@ -275,7 +274,7 @@ class _MonthlyReviewBottomSheetState extends State<MonthlyReviewBottomSheet> {
     final savingsGoal = user?.savingsGoal ?? 0;
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -284,46 +283,49 @@ class _MonthlyReviewBottomSheetState extends State<MonthlyReviewBottomSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           // Icon
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: AppTheme.accentGradient,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.account_balance_wallet,
               size: 48,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Title
           Text(
             'Great! 🎊',
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           // Question
           Text(
             'How much did you save in $monthName?',
-            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           // Goal reminder
           if (savingsGoal > 0)
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppTheme.successColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
@@ -331,51 +333,50 @@ class _MonthlyReviewBottomSheetState extends State<MonthlyReviewBottomSheet> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.flag,
-                    color: AppTheme.successColor,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
+                  Icon(Icons.flag, color: AppTheme.successColor, size: 20),
+                  SizedBox(width: 8),
                   Text(
                     'Your goal: ₹${savingsGoal.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      color: AppTheme.successColor,
+                    style: TextStyle(
+                      color: AppTheme.readableColor(
+                        context,
+                        AppTheme.successColor,
+                      ),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
             ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Input
           TextField(
             controller: _savingsController,
             keyboardType: TextInputType.number,
             autofocus: true,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: AppTheme.primaryColor,
+              color: AppTheme.readableColor(context, AppTheme.primaryColor),
             ),
             decoration: InputDecoration(
               prefixText: '₹ ',
-              prefixStyle: const TextStyle(
+              prefixStyle: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.primaryColor,
+                color: AppTheme.readableColor(context, AppTheme.primaryColor),
               ),
               hintText: '0',
               filled: true,
-              fillColor: Colors.grey[100],
+              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           // Submit button
           SizedBox(
@@ -390,8 +391,8 @@ class _MonthlyReviewBottomSheetState extends State<MonthlyReviewBottomSheet> {
                 ),
               ),
               child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
+                  ? CircularProgressIndicator(color: Colors.white)
+                  : Text(
                       'Submit',
                       style: TextStyle(
                         fontSize: 16,

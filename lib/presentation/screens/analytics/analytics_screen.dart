@@ -66,24 +66,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Analytics'),
+        title: Text('Analytics'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.chevron_left),
+            icon: Icon(Icons.chevron_left),
             onPressed: () => _changeMonth(-1),
             tooltip: 'Previous Month',
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Center(
               child: Text(
                 DateFormat('MMM yyyy').format(_selectedMonth),
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_right),
+            icon: Icon(Icons.chevron_right),
             onPressed:
                 _selectedMonth.month == DateTime.now().month &&
                     _selectedMonth.year == DateTime.now().year
@@ -94,61 +94,61 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         ],
       ),
       body: expenseProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Total Spending Card
                   _buildTotalCard(monthlyTotal),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Category Distribution
                   _buildSectionTitle('Spending by Category'),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       child: Column(
                         children: [
                           CategoryPieChart(
                             categoryTotals: categoryTotals,
                             totalAmount: monthlyTotal,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           _buildLegend(categoryTotals),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Spending Trend
                   _buildSectionTitle('Spending Trend (Last 6 Months)'),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       child: SpendingLineChart(monthlyData: monthlyTrend),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Budget Comparison
                   if (currentBudget != null) ...[
                     _buildSectionTitle('Budget vs Actual'),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16),
                         child: Column(
                           children: [
                             BudgetComparisonChart(
                               budgetAmounts: currentBudget.categoryBudgets,
                               actualAmounts: categoryTotals,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             _buildBudgetLegend(),
                           ],
                         ),
@@ -157,9 +157,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ],
 
                   // Top Categories
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                   _buildSectionTitle('Top Categories'),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   _buildTopCategories(categoryTotals),
                 ],
               ),
@@ -171,21 +171,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Card(
       color: AppTheme.primaryColor,
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Total Spending',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  style: TextStyle(color: Colors.white, fontSize: 14),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   '₹${total.toStringAsFixed(2)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -193,7 +193,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 ),
               ],
             ),
-            const Icon(Icons.show_chart, color: Colors.white, size: 48),
+            Icon(Icons.show_chart, color: Colors.white, size: 48),
           ],
         ),
       ),
@@ -203,10 +203,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: AppTheme.textPrimaryColor,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
@@ -225,8 +225,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               height: 12,
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
-            const SizedBox(width: 6),
-            Text(entry.key, style: const TextStyle(fontSize: 12)),
+            SizedBox(width: 6),
+            Text(entry.key, style: TextStyle(fontSize: 12)),
           ],
         );
       }).toList(),
@@ -238,7 +238,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _buildLegendItem('Budget', AppTheme.primaryColor.withOpacity(0.3)),
-        const SizedBox(width: 24),
+        SizedBox(width: 24),
         _buildLegendItem('Actual', AppTheme.primaryColor),
       ],
     );
@@ -256,8 +256,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             borderRadius: BorderRadius.circular(4),
           ),
         ),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 12)),
+        SizedBox(width: 6),
+        Text(label, style: TextStyle(fontSize: 12)),
       ],
     );
   }
@@ -279,10 +279,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             (category.value / expenseProvider.monthlyTotal) * 100;
 
         return Card(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
@@ -292,26 +292,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 children: [
                   Text(
                     '${index + 1}',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: color),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.readableColor(context, color),
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Icon(icon, color: color, size: 24),
                 ],
               ),
             ),
             title: Text(
               category.key,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
               '${percentage.toStringAsFixed(1)}% of total',
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
             ),
             trailing: Text(
               '₹${category.value.toStringAsFixed(0)}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: AppTheme.readableColor(context, color),
                 fontSize: 16,
               ),
             ),

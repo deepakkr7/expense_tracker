@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/theme/app_theme.dart';
 
 class CategoryPieChart extends StatelessWidget {
   final Map<String, double> categoryTotals;
@@ -46,10 +47,10 @@ class CategoryPieChart extends StatelessWidget {
           value: amount,
           title: '${percentage.toStringAsFixed(1)}%',
           radius: 100,
-          titleStyle: const TextStyle(
+          titleStyle: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: AppTheme.onColor(color),
           ),
         ),
       );
