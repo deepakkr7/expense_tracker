@@ -1,3 +1,4 @@
+import '../../core/services/backend_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../models/friend_model.dart';
@@ -68,18 +69,11 @@ class FriendRepository {
   // Search for user by email (to add as friend)
   Future<FriendModel?> searchUserByEmail(String userId, String email) async {
     try {
-      final userSnapshot = await _firestore
-          .collection('expense_tracker')
-          .doc('users')
-          .collection('users')
-          .where('email', isEqualTo: email)
-          .get();
-
-      if (userSnapshot.docs.isEmpty) {
-        return null;
-      }
-
-      final userData = userSnapshot.docs.first.data();
+      final result = await BackendService().call('findFriend', {
+        'email': email.trim(),
+      });
+      final userData = result['friend'] as Map<String, dynamic>?;
+      if (userData == null) return null;
       return FriendModel(
         id: '', // Will be set when adding
         userId: userId,

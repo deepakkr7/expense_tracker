@@ -46,3 +46,10 @@ app.*.map.json
 lib/firebase_options.dart
 
 .env
+node_modules/
+.cache/
+functions/.env*
+functions/.secret.local
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

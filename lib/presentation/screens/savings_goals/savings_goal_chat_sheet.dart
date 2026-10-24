@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/deepseek_service.dart';
+import '../../../core/services/backend_service.dart';
 import '../../../data/models/savings_goal_model.dart';
 import '../../../providers/auth_provider.dart';
 
@@ -18,9 +19,64 @@ class _SavingsGoalChatSheetState extends State<SavingsGoalChatSheet> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final DeepSeekService _aiService = DeepSeekService();
-  
+
   List<Map<String, String>> _messages = [];
   bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _report(String content) async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text('Report this AI response?'),
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'The selected response and chosen reason will be sent to SpendWise for review.',
+            ),
+          ),
+          for (final reason in [
+            'Unsafe or offensive',
+            'Misleading financial guidance',
+            'Other concern',
+          ])
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, reason),
+              child: Text(reason),
+            ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+    if (reason == null) return;
+    try {
+      await BackendService().call('reportAi', {
+        'content': content,
+        'reason': reason,
+      });
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Report submitted. Thank you.')));
+    } catch (_) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not submit the report. Please try again.'),
+          ),
+        );
+    }
+  }
 
   @override
   void initState() {
@@ -32,7 +88,8 @@ class _SavingsGoalChatSheetState extends State<SavingsGoalChatSheet> {
     final user = context.read<AuthProvider>().currentUser;
     final income = user?.monthlyIncome ?? 0.0;
 
-    final systemPrompt = '''
+    final systemPrompt =
+        '''
 You are a helpful and encouraging financial Savings Coach.
 The user is trying to save for a goal: "${widget.goal.name}".
 Target Amount: ₹${widget.goal.targetAmount}
@@ -45,7 +102,7 @@ Your first message should be an encouraging greeting and a brief 2-3 sentence st
 ''';
 
     _messages.add({'role': 'system', 'content': systemPrompt});
-    
+
     // Automatically trigger the first response from the AI
     _sendMessage(isInitial: true);
   }
@@ -74,9 +131,9 @@ Your first message should be an encouraging greeting and a brief 2-3 sentence st
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) {
@@ -90,7 +147,7 @@ Your first message should be an encouraging greeting and a brief 2-3 sentence st
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
@@ -100,53 +157,58 @@ Your first message should be an encouraging greeting and a brief 2-3 sentence st
   @override
   Widget build(BuildContext context) {
     // Filter out system message for UI
-    final displayMessages = _messages.where((m) => m['role'] != 'system').toList();
+    final displayMessages = _messages
+        .where((m) => m['role'] != 'system')
+        .toList();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
           // Handle
           Container(
-            margin: const EdgeInsets.only(top: 12),
+            margin: EdgeInsets.only(top: 12),
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey[400],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 16),
-          
+          SizedBox(height: 16),
+
           // Title
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
-                const Icon(Icons.psychology, color: AppTheme.primaryColor),
-                const SizedBox(width: 8),
-                const Text(
+                Icon(Icons.psychology, color: AppTheme.primaryColor),
+                SizedBox(width: 8),
+                Text(
                   'AI Savings Coach',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ),
-          const Divider(),
-          
+          Divider(),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              'AI suggestions can be inaccurate. General budgeting guidance only.',
+            ),
+          ),
+
           // Chat List
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               itemCount: displayMessages.length,
               itemBuilder: (context, index) {
                 final msg = displayMessages[index];
@@ -155,14 +217,14 @@ Your first message should be an encouraging greeting and a brief 2-3 sentence st
               },
             ),
           ),
-          
+
           // Loading Indicator
           if (_isLoading)
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(8.0),
               child: CircularProgressIndicator(),
             ),
-            
+
           // Input Area
           Container(
             padding: EdgeInsets.only(
@@ -177,7 +239,7 @@ Your first message should be an encouraging greeting and a brief 2-3 sentence st
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
                   blurRadius: 10,
-                  offset: const Offset(0, -5),
+                  offset: Offset(0, -5),
                 ),
               ],
             ),
@@ -194,7 +256,7 @@ Your first message should be an encouraging greeting and a brief 2-3 sentence st
                       ),
                       filled: true,
                       fillColor: Colors.grey.withOpacity(isDark ? 0.2 : 0.1),
-                      contentPadding: const EdgeInsets.symmetric(
+                      contentPadding: EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 10,
                       ),
@@ -202,11 +264,11 @@ Your first message should be an encouraging greeting and a brief 2-3 sentence st
                     onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 CircleAvatar(
                   backgroundColor: AppTheme.primaryColor,
                   child: IconButton(
-                    icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                    icon: Icon(Icons.send, color: Colors.white, size: 20),
                     onPressed: _isLoading ? null : () => _sendMessage(),
                   ),
                 ),
@@ -222,24 +284,40 @@ Your first message should be an encouraging greeting and a brief 2-3 sentence st
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: isUser ? AppTheme.primaryColor : Colors.grey.withOpacity(isDark ? 0.3 : 0.2),
+          color: isUser
+              ? AppTheme.primaryColor
+              : Colors.grey.withOpacity(isDark ? 0.3 : 0.2),
           borderRadius: BorderRadius.circular(16).copyWith(
-            bottomRight: isUser ? const Radius.circular(0) : const Radius.circular(16),
-            bottomLeft: isUser ? const Radius.circular(16) : const Radius.circular(0),
+            bottomRight: isUser ? Radius.circular(0) : Radius.circular(16),
+            bottomLeft: isUser ? Radius.circular(16) : Radius.circular(0),
           ),
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isUser ? Colors.white : (isDark ? Colors.white : Colors.black87),
-            fontSize: 15,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              text,
+              style: TextStyle(
+                color: isUser
+                    ? Colors.white
+                    : (isDark ? Colors.white : Colors.black87),
+                fontSize: 15,
+              ),
+            ),
+            if (!isUser)
+              TextButton.icon(
+                onPressed: () => _report(text),
+                icon: Icon(Icons.flag_outlined, size: 18),
+                label: Text('Report response'),
+              ),
+          ],
         ),
       ),
     );

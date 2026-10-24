@@ -1,9 +1,28 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'backend_service.dart';
+import 'privacy_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DeepSeekService {
-  static const String _baseUrl = 'https://api.deepseek.com/v1/chat/completions';
+  Future<String> _complete(
+    List<Map<String, String>> messages,
+    double temperature,
+  ) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (!await PrivacyPreferences.aiEnabled()) {
+      throw Exception(
+        'Enable optional AI assistance in More > Privacy & Account first.',
+      );
+    }
+    if (uid == null || FirebaseAuth.instance.currentUser?.uid != uid) {
+      throw Exception('Your session changed. Please try again.');
+    }
+    final result = await BackendService().call('ai', {
+      'messages': messages,
+      'temperature': temperature,
+    });
+    return result['content'] as String;
+  }
 
   Future<Map<String, double>> generateBudgetPlan({
     required double income,
@@ -13,42 +32,45 @@ class DeepSeekService {
     required List<String> categories,
     String debtStrategy = 'balanced',
   }) async {
-    final apiKey = dotenv.env['DEEPSEEK_API_KEY'];
-    
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('DeepSeek API key not found in .env');
-    }
+    double totalBillsAmount = bills.values.fold(
+      0.0,
+      (sum, amount) => sum + amount,
+    );
 
-    double totalBillsAmount = bills.values.fold(0.0, (sum, amount) => sum + amount);
-    
     double mandatoryDebt = 0.0;
     if (debt > 0 && debtStrategy == 'aggressive') {
       mandatoryDebt = debt;
     }
-    
+
     double totalMandatory = totalBillsAmount + mandatoryDebt;
     double remaining = limit - totalMandatory;
-    
+
     String limitInstruction = remaining < 0
         ? 'WARNING: The mandatory expenses (Bills + Debt) exceed the Target Limit (₹$limit). You MUST allocate the exact mandatory amounts, and set 0 for all others. The final total will exceed the Target Limit.'
         : 'CRITICAL RULE: The total sum of all categories MUST EXACTLY EQUAL the Target Savings Limit (₹$limit). After mandatory Bills and Debt, you only have exactly ₹$remaining remaining to distribute across the other categories. Do not exceed this limit!';
 
-    String billsString = bills.isEmpty 
-        ? "None" 
-        : bills.entries.map((e) => "- ${e.key}: ₹${e.value.toStringAsFixed(0)}").join('\n');
+    String billsString = bills.isEmpty
+        ? "None"
+        : bills.entries
+              .map((e) => "- ${e.key}: ₹${e.value.toStringAsFixed(0)}")
+              .join('\n');
 
     String debtInstruction = '';
     if (debt > 0) {
       if (debtStrategy == 'aggressive') {
-        debtInstruction = 'You MUST allocate the FULL amount (₹$debt) to "Debt Repayment". Do not reduce this amount.';
+        debtInstruction =
+            'You MUST allocate the FULL amount (₹$debt) to "Debt Repayment". Do not reduce this amount.';
       } else if (debtStrategy == 'balanced') {
-        debtInstruction = 'Allocate a reasonable partial amount to "Debt Repayment" to balance with other expenses.';
+        debtInstruction =
+            'Allocate a reasonable partial amount to "Debt Repayment" to balance with other expenses.';
       } else {
-        debtInstruction = 'Allocate only a very small minimum amount or 0 to "Debt Repayment" so the user can prioritize other expenses.';
+        debtInstruction =
+            'Allocate only a very small minimum amount or 0 to "Debt Repayment" so the user can prioritize other expenses.';
       }
     }
 
-    final prompt = '''
+    final prompt =
+        '''
 You are a financial advisor AI. The user needs a monthly budget plan.
 Income: ₹$income
 Target Savings Limit (Max to spend): ₹$limit
@@ -64,147 +86,51 @@ Return the response strictly as a valid JSON object where keys are category name
 Example: {"Food & Dining": 5000, "Transport": 2000}
 ''';
 
-    print('--- DEEPSEEK AI PROMPT ---');
-    print(prompt);
-    print('--------------------------');
-
-    try {
-      final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $apiKey',
-        },
-        body: jsonEncode({
-          'model': 'deepseek-chat',
-          'messages': [
-            {
-              'role': 'system',
-              'content': 'You are a strict JSON-only financial assistant. You only output valid JSON.',
-            },
-            {
-              'role': 'user',
-              'content': prompt,
-            }
-          ],
-          'temperature': 0.2, // Low temp for more deterministic output
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        print('--- DEEPSEEK AI RESPONSE ---');
-        print(response.body);
-        print('----------------------------');
-        
-        final data = jsonDecode(response.body);
-        final content = data['choices'][0]['message']['content'].toString().trim();
-        
-        // Clean up markdown if AI returned it despite instructions
-        String jsonStr = content;
-        if (jsonStr.startsWith('```json')) {
-          jsonStr = jsonStr.substring(7);
-        } else if (jsonStr.startsWith('```')) {
-          jsonStr = jsonStr.substring(3);
-        }
-        if (jsonStr.endsWith('```')) {
-          jsonStr = jsonStr.substring(0, jsonStr.length - 3);
-        }
-        
-        final parsedJson = jsonDecode(jsonStr.trim()) as Map<String, dynamic>;
-        
-        Map<String, double> result = {};
-        parsedJson.forEach((key, value) {
-          result[key] = (value as num).toDouble();
-        });
-        
-        return result;
-      } else {
-        throw Exception('DeepSeek API error: ${response.statusCode} - ${response.body}');
+    final content = await _complete([
+      {'role': 'user', 'content': prompt},
+    ], 0.2);
+    final cleaned = content
+        .trim()
+        .replaceFirst(RegExp(r'^```(?:json)?\s*'), '')
+        .replaceFirst(RegExp(r'\s*```$'), '');
+    final parsed = jsonDecode(cleaned) as Map<String, dynamic>;
+    final result = <String, double>{};
+    for (final entry in parsed.entries) {
+      final value = entry.value;
+      if (!categories.contains(entry.key) ||
+          value is! num ||
+          !value.isFinite ||
+          value < 0) {
+        throw const FormatException('Invalid AI budget response');
       }
-    } catch (e) {
-      print('DeepSeek Error: $e');
-      throw Exception('Failed to generate budget plan');
+      result[entry.key] = value.toDouble();
     }
+    if (result.isEmpty) throw const FormatException('Empty AI budget response');
+    return result;
   }
 
-  Future<String?> categorizeExpense(String description, List<String> categories) async {
-    final apiKey = dotenv.env['DEEPSEEK_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) return null;
-
-    final prompt = '''
-Categorize the following expense description into EXACTLY ONE of the provided categories. 
-Return ONLY the exact category name and nothing else. Do not add punctuation.
-Categories: ${categories.join(', ')}
-Description: "$description"
-''';
-
+  Future<String?> categorizeExpense(
+    String description,
+    List<String> categories,
+  ) async {
+    if (!await PrivacyPreferences.aiEnabled()) return null;
     try {
-      final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $apiKey',
+      final content = (await _complete([
+        {
+          'role': 'user',
+          'content':
+              'Return only one category from: ${categories.join(', ')}. Expense: $description',
         },
-        body: jsonEncode({
-          'model': 'deepseek-chat',
-          'messages': [
-            {'role': 'user', 'content': prompt}
-          ],
-          'temperature': 0.1, // very low temperature for strict classification
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final content = data['choices'][0]['message']['content'].toString().trim();
-        
-        // Validate if returned string matches a category
-        if (categories.contains(content)) {
-          return content;
-        }
-        
-        // Fallback fuzzy match
-        for (final cat in categories) {
-          if (content.toLowerCase().contains(cat.toLowerCase())) {
-            return cat;
-          }
-        }
-      }
-      return null;
-    } catch (e) {
-      print('Categorization error: $e');
+      ], 0.1)).trim();
+      return categories.contains(content) ? content : null;
+    } catch (_) {
       return null;
     }
   }
 
-  Future<String> chatWithSavingsCoach(List<Map<String, String>> conversationHistory) async {
-    final apiKey = dotenv.env['DEEPSEEK_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('DeepSeek API key not found in .env');
-    }
-
-    try {
-      final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $apiKey',
-        },
-        body: jsonEncode({
-          'model': 'deepseek-chat',
-          'messages': conversationHistory,
-          'temperature': 0.7, // higher temperature for conversational chat
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['choices'][0]['message']['content'].toString();
-      } else {
-        throw Exception('API Error: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to connect to AI Coach: $e');
-    }
+  Future<String> chatWithSavingsCoach(
+    List<Map<String, String>> conversationHistory,
+  ) {
+    return _complete(conversationHistory, 0.7);
   }
 }

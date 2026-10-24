@@ -74,7 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Profile updated successfully!'),
               backgroundColor: AppTheme.successColor,
             ),
@@ -85,21 +85,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             final shouldUpdateBudget = await showDialog<bool>(
               context: context,
               builder: (ctx) => AlertDialog(
-                title: const Text('Limit Changed'),
-                content: const Text(
+                title: Text('Limit Changed'),
+                content: Text(
                   'You changed your monthly limit. Would you like to update your budget plan to match?',
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Not Now'),
+                    child: Text('Not Now'),
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, true),
                     style: TextButton.styleFrom(
                       foregroundColor: AppTheme.primaryColor,
                     ),
-                    child: const Text('Update Budget Plan'),
+                    child: Text('Update Budget Plan'),
                   ),
                 ],
               ),
@@ -108,7 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (shouldUpdateBudget == true && mounted) {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const BudgetPlannerScreen()),
+                MaterialPageRoute(builder: (_) => BudgetPlannerScreen()),
               );
             }
           }
@@ -135,22 +135,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showPhotoOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Change Profile Photo',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             ListTile(
-              leading: const Icon(Icons.link, color: AppTheme.primaryColor),
-              title: const Text('Enter Photo URL'),
+              leading: Icon(Icons.link, color: AppTheme.primaryColor),
+              title: Text('Enter Photo URL'),
               onTap: () {
                 Navigator.pop(ctx);
                 _showUrlInput(context);
@@ -159,8 +159,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (context.read<AuthProvider>().currentUser?.photoUrl != null &&
                 context.read<AuthProvider>().currentUser!.photoUrl!.isNotEmpty)
               ListTile(
-                leading: const Icon(Icons.delete, color: AppTheme.errorColor),
-                title: const Text('Remove Photo'),
+                leading: Icon(Icons.delete, color: AppTheme.errorColor),
+                title: Text('Remove Photo'),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await _removePhoto();
@@ -177,10 +177,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Enter Photo URL'),
+        title: Text('Enter Photo URL'),
         content: TextField(
           controller: urlController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'https://example.com/photo.jpg',
             prefixIcon: Icon(Icons.link),
           ),
@@ -188,14 +188,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               _uploadPhoto(urlController.text.trim());
             },
-            child: const Text('Save'),
+            child: Text('Save'),
           ),
         ],
       ),
@@ -206,7 +206,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (photoUrl.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter a valid URL')));
+      ).showSnackBar(SnackBar(content: Text('Please enter a valid URL')));
       return;
     }
 
@@ -222,7 +222,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Photo updated successfully!'),
               backgroundColor: AppTheme.successColor,
             ),
@@ -255,7 +255,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Photo removed'),
               backgroundColor: AppTheme.successColor,
             ),
@@ -281,20 +281,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = authProvider.currentUser;
 
     if (user == null) {
-      return const Scaffold(body: Center(child: Text('No user data')));
+      return Scaffold(body: Center(child: Text('No user data')));
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text('Profile'),
         actions: [
           if (!_isEditing)
             IconButton(
-              icon: const Icon(Icons.edit),
+              icon: Icon(Icons.edit),
               onPressed: () => setState(() => _isEditing = true),
             )
           else
-            TextButton(onPressed: _cancelEdit, child: const Text('Cancel')),
+            TextButton(onPressed: _cancelEdit, child: Text('Cancel')),
         ],
       ),
       body: SingleChildScrollView(
@@ -303,8 +303,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Profile Header
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(32),
-              decoration: const BoxDecoration(
+              padding: EdgeInsets.all(32),
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Color(0xFF111827), Color(0xFF374151)],
                   begin: Alignment.topCenter,
@@ -340,10 +340,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     user.name.isNotEmpty
                                         ? user.name[0].toUpperCase()
                                         : 'U',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 40,
                                       fontWeight: FontWeight.bold,
-                                      color: AppTheme.primaryColor,
+                                      color: AppTheme.readableColor(
+                                        context,
+                                        AppTheme.primaryColor,
+                                      ),
                                     ),
                                   ),
                                 )
@@ -353,16 +356,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           bottom: 0,
                           right: 0,
                           child: Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: AppTheme.accentColor,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: const Color(0xFF111827),
+                                color: Color(0xFF111827),
                                 width: 3,
                               ),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.camera_alt,
                               color: Colors.white,
                               size: 16,
@@ -372,19 +375,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     user.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     user.email,
-                    style: const TextStyle(fontSize: 14, color: Colors.white70),
+                    style: TextStyle(fontSize: 14, color: Colors.white),
                   ),
                 ],
               ),
@@ -392,7 +395,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             // Profile Form
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -400,14 +403,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     // Name Section
                     _buildSectionTitle('Personal Information'),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     _buildInfoCard(
                       icon: Icons.person,
                       label: 'Name',
                       child: _isEditing
                           ? TextFormField(
                               controller: _nameController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Enter your name',
                               ),
                               validator: (value) =>
@@ -415,17 +418,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             )
                           : Text(
                               user.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     // Financial Information
                     _buildSectionTitle('Financial Information'),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     _buildInfoCard(
                       icon: Icons.account_balance_wallet,
                       label: 'Monthly Income',
@@ -433,7 +436,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ? TextFormField(
                               controller: _incomeController,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Enter monthly income',
                                 prefixText: '₹ ',
                               ),
@@ -448,11 +451,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 fontWeight: FontWeight.w600,
                                 color: user.monthlyIncome > 0
                                     ? AppTheme.successColor
-                                    : AppTheme.textSecondaryColor,
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     _buildInfoCard(
                       icon: Icons.request_page,
                       label: 'Monthly Limit',
@@ -460,7 +465,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ? TextFormField(
                               controller: _savingsController,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Enter monthly limit',
                                 prefixText: '₹ ',
                               ),
@@ -474,11 +479,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 fontWeight: FontWeight.w600,
                                 color: user.savingsGoal > 0
                                     ? AppTheme.accentColor
-                                    : AppTheme.textSecondaryColor,
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     if (user.lastIncomeSetMonth != null)
                       _buildInfoCard(
                         icon: Icons.calendar_today,
@@ -487,13 +494,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           DateFormat(
                             'MMM dd, yyyy',
                           ).format(user.lastIncomeSetMonth!),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: AppTheme.textSecondaryColor,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: 32),
 
                     // Save Button
                     if (_isEditing)
@@ -506,10 +515,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             backgroundColor: AppTheme.primaryColor,
                           ),
                           child: _isLoading
-                              ? const CircularProgressIndicator(
-                                  color: Colors.white,
-                                )
-                              : const Text(
+                              ? CircularProgressIndicator(color: Colors.white)
+                              : Text(
                                   'Save Changes',
                                   style: TextStyle(
                                     fontSize: 16,
@@ -520,7 +527,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
 
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     // Logout Button
                     SizedBox(
@@ -531,22 +538,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           final confirmed = await showDialog<bool>(
                             context: context,
                             builder: (context) => AlertDialog(
-                              title: const Text(
+                              title: Text(
                                 'Logout',
-                                style: TextStyle(color: Colors.grey),
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                               ),
-                              content: const Text(
-                                'Are you sure you want to logout?',
-                              ),
+                              content: Text('Are you sure you want to logout?'),
                               actions: [
                                 TextButton(
                                   onPressed: () =>
                                       Navigator.pop(context, false),
-                                  child: const Text('Cancel'),
+                                  child: Text('Cancel'),
                                 ),
                                 TextButton(
                                   onPressed: () => Navigator.pop(context, true),
-                                  child: const Text('Logout'),
+                                  child: Text('Logout'),
                                 ),
                               ],
                             ),
@@ -564,20 +573,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             }
                           }
                         },
-                        icon: const Icon(
-                          Icons.logout,
-                          color: AppTheme.errorColor,
-                        ),
-                        label: const Text(
+                        icon: Icon(Icons.logout, color: AppTheme.errorColor),
+                        label: Text(
                           'Logout',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.errorColor,
+                            color: AppTheme.readableColor(
+                              context,
+                              AppTheme.errorColor,
+                            ),
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppTheme.errorColor),
+                          side: BorderSide(color: AppTheme.errorColor),
                         ),
                       ),
                     ),
@@ -594,10 +603,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: AppTheme.textPrimaryColor,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
@@ -608,7 +617,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required Widget child,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
@@ -617,27 +626,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppTheme.secondaryColor.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: AppTheme.secondaryColor),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.textSecondaryColor,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     letterSpacing: 0.5,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 child,
               ],
             ),
