@@ -1,5 +1,7 @@
 # 💰 SpendWise - Expense Tracker
 
+> For current Android release setup, signing, privacy pages and Firebase Functions, see [PLAY_STORE_RELEASE.md](PLAY_STORE_RELEASE.md).
+
 <div align="center">
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.10.0-02569B?style=for-the-badge&logo=flutter)
@@ -17,7 +19,7 @@ A powerful, feature-rich, AI-assisted expense tracking and budget management app
 
 ## 📋 Overview
 
-**SpendWise** is a comprehensive personal finance management application designed to help users track expenses, manage budgets, split bills with friends, set savings goals, and gain insights into their spending habits. Featuring on-device receipt OCR, UPI QR scanning, DeepSeek AI financial coaching, background location movement reminders, and real-time Firebase sync, SpendWise makes managing your finances effortless.
+**SpendWise** is a comprehensive personal finance management application designed to help users track expenses, manage budgets, split bills with friends, set savings goals, and gain insights into their spending habits. Featuring on-device receipt OCR, UPI QR scanning, DeepSeek AI financial coaching, and real-time Firebase sync, SpendWise makes managing your finances effortless.
 
 > 📖 **Looking for in-depth architecture and design docs?** Check out [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md) for full architectural diagrams, Firestore schemas, state management breakdown, and technical deep-dives.
 
@@ -38,13 +40,12 @@ A powerful, feature-rich, AI-assisted expense tracking and budget management app
 ### 📊 Smart Budgeting & Alerts
 - **Monthly Budgets**: Set category-wise budget limits or use the 50/30/20 guideline
 - **Budget Tracking**: Monitor real-time spending against allocated budgets via Firestore streams
-- **Threshold Warnings**: In-app banners and push notifications at 80% and 90% budget limits
+- **Threshold Warnings**: In-app banners and local notifications at 80% and 90% budget limits
 - **Zero-Budget Protection**: Alerts users when spending against a category with ₹0 allocation
 - **Monthly Review**: Automatic end-of-month review bottom sheet evaluating savings performance
 
-### ⏰ Proactive Reminders & Smart Background Services
+### ⏰ Optional Local Reminders
 - **Daily 10:00 PM Check-In**: Scheduled local notification prompting users to log daily expenses
-- **Background Location Reminder**: Geolocation movement tracker (100m displacement) prompting to log purchases when leaving stores
 - **Bill Reminders**: Scheduled notifications for recurring and upcoming bills with automatic expense logging upon payment
 
 ### 👥 Social Features & Bill Splitting
@@ -85,7 +86,6 @@ A powerful, feature-rich, AI-assisted expense tracking and budget management app
 - **Firebase Core** - Firebase integration
 - **Firebase Auth** - User authentication
 - **Cloud Firestore** - NoSQL cloud database
-- **Firebase Messaging** - Push notifications
 
 ### State Management
 - **Provider** - State management solution
@@ -149,7 +149,6 @@ A powerful, feature-rich, AI-assisted expense tracking and budget management app
    <uses-permission android:name="android.permission.INTERNET"/>
    <uses-permission android:name="android.permission.CAMERA"/>
    <uses-permission android:name="android.permission.READ_CONTACTS"/>
-   <uses-permission android:name="android.permission.WRITE_CONTACTS"/>
    ```
 
    **iOS** (`ios/Runner/Info.plist`):

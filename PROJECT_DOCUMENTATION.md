@@ -1,5 +1,7 @@
 # 💰 SpendWise - Comprehensive Project Documentation & Architecture Guide
 
+> Production setup is documented in [PLAY_STORE_RELEASE.md](PLAY_STORE_RELEASE.md). Android uses an authenticated Firebase backend, optional AI consent, and no location tracking.
+
 SpendWise is an intelligent, privacy-focused, cross-platform personal finance, expense tracking, and budget management application built using **Flutter**, **Firebase Cloud Firestore**, and **DeepSeek AI**.
 
 ---
@@ -20,7 +22,7 @@ SpendWise is an intelligent, privacy-focused, cross-platform personal finance, e
    - [Savings Goals & AI Savings Coach](#6-savings-goals--ai-savings-coach)
    - [Social Split Expenses & Group Finances](#7-social-split-expenses--group-finances)
    - [Analytics, Charts & Reporting](#8-analytics-charts--reporting)
-   - [Proactive Reminders & Background Geolocation](#9-proactive-reminders--background-geolocation)
+   - [Optional Local Reminders](#9-optional-local-reminders)
    - [Monthly Lifecycle & Savings Review](#10-monthly-lifecycle--savings-review)
 4. [Data Architecture & Firestore Schema](#-4-data-architecture--firestore-schema)
    - [Firestore Collection Structure](#firestore-collection-structure)
@@ -38,7 +40,7 @@ SpendWise is an intelligent, privacy-focused, cross-platform personal finance, e
 Managing personal finances is often tedious and fragmented across bank alerts, paper receipts, split bills with roommates, and upcoming bill dues. **SpendWise** addresses this by serving as an all-in-one financial assistant that combines:
 - **Zero-effort capture**: ML Kit OCR receipt scanning, UPI QR code scanning, and phonebook contacts integration.
 - **Deep intelligence**: DeepSeek AI budget planning with debt-strategy optimization, real-time transaction auto-categorization, and an interactive savings coach.
-- **Proactive lifecycle management**: Background location-based purchase prompts, recurring 10:00 PM check-ins, end-of-month savings reviews, and multi-channel budget threshold notifications.
+- **Proactive lifecycle management**: Optional local reminders around 10:00 PM, end-of-month savings reviews, and multi-channel budget threshold notifications.
 - **Social finances**: Group creation and equal/custom bill splitting with settled status tracking.
 
 ---
@@ -86,7 +88,7 @@ SpendWise is built on **Clean Layered Architecture** with separation of concerns
    - **Repositories**: Encapsulates Firestore queries, document references, and batch updates.
    - **Services**: Device-specific services (`OCRService`, `QRProcessorService`).
 4. **Core Layer (`lib/core/`)**:
-   - Central application constants, color themes, input validators, notification schedulers, location tracking, and external AI integrations.
+   - Central application constants, color themes, input validators, notification schedulers and authenticated AI backend integrations.
 
 ### High-Level Architecture Diagram
 
@@ -100,7 +102,8 @@ graph TD
     Repositories --> Firestore[(Firebase Cloud Firestore)]
     Repositories --> Models[Data Models]
 
-    CoreServices --> DeepSeek[DeepSeek Chat API / LLM]
+    CoreServices --> Backend[Authenticated Firebase Functions]
+    Backend --> DeepSeek[DeepSeek Chat API / LLM]
     CoreServices --> Notifications[Flutter Local Notifications]
     CoreServices --> Location[Geolocator & Background Service]
     CoreServices --> MLKit[Google ML Kit On-Device OCR]
@@ -139,7 +142,7 @@ SpendWise leverages **Reactive Streams** for Firestore:
   - Allows linking expenses to friends without manual typing.
 
 ### 2. AI-Powered Capabilities (DeepSeek LLM)
-Integrated via `DeepSeekService` using the `deepseek-chat` model with secure `.env` credentials:
+Integrated via `DeepSeekService` using the `deepseek-chat` model through Firebase Functions with a server-side Secret Manager credential:
 - **AI Budget Planner**:
   - Formulates a complete category-wise budget based on user income, target spending limit, active debts, and upcoming bills.
   - Supports debt mitigation strategies (**Aggressive**, **Balanced**, **Light**).
@@ -197,13 +200,8 @@ Integrated via `fl_chart`:
 - **Budget vs Actual Comparison**: Dual bar charts comparing budgeted amounts against actual expenditures per category.
 - **Top Expense Categories**: Quick-reference ranked list of highest spending sectors.
 
-### 9. Proactive Reminders & Background Geolocation
-- **Daily 10:00 PM Notification**:
-  - Scheduled via `timezone` and local notifications to prompt users before the day ends.
-- **Smart Background Location Reminder (`LocationService`)**:
-  - Uses `flutter_background_service` and `geolocator`.
-  - Listens to significant physical displacement (100 meters).
-  - Triggers a prompt: *"Did you just make a purchase? You are on the move! Tap here to quickly log any expenses."*
+### 9. Optional Local Reminders
+Users can enable a daily reminder around 10 PM in Privacy & Account. Notifications use inexact scheduling. Bill reminders request notification permission when scheduled. Location tracking has been removed.
 
 ### 10. Monthly Lifecycle & Savings Review
 - **Monthly Income Onboarding (`MonthlyIncomeScreen`)**:
@@ -263,10 +261,9 @@ expense_tracker/
 | **Framework** | Flutter (SDK `^3.10.0`), Dart | Cross-platform UI toolkit |
 | **Cloud Backend** | Firebase Core, Cloud Firestore, Firebase Auth | Real-time database, cloud sync, authentication |
 | **State Management** | `provider: ^6.1.2` | Reactive state management using `ChangeNotifier` |
-| **Artificial Intelligence** | DeepSeek Chat API (`http: ^1.2.1`, `flutter_dotenv`) | Budget planning, auto-categorization, savings chat |
+| **Artificial Intelligence** | DeepSeek Chat API (authenticated HTTPS backend) | Budget planning, auto-categorization, savings chat |
 | **Computer Vision (OCR)** | `google_mlkit_text_recognition: ^0.13.1` | Local on-device receipt text parsing |
-| **QR Code Processing** | `mobile_scanner: ^5.2.3`, `url_launcher: ^6.3.1` | UPI QR scanner and app launcher |
-| **Hardware & Sensors** | `geolocator: ^14.0.2`, `flutter_background_service: ^5.1.0` | Background location tracking & movement detection |
+| **QR Code Processing** | `mobile_scanner: ^7.4.2`, `url_launcher: ^6.3.1` | UPI QR scanner and app launcher |
 | **Notifications** | `flutter_local_notifications: ^20.1.0`, `timezone: ^0.10.1` | Scheduled local alerts & reminders |
 | **Contacts** | `flutter_contacts: ^1.1.7+1`, `permission_handler: ^11.3.1` | Address book integration |
 | **Visualizations** | `fl_chart: ^0.69.2` | Interactive pie, line, and bar charts |
@@ -301,7 +298,6 @@ SpendWise implements **Material 3** principles with a curated, modern aesthetic:
 
 ```
 expense_tracker/
-├── .env                                  # API keys (DeepSeek API Key, etc.)
 ├── pubspec.yaml                          # Dependencies and assets
 ├── README.md                             # Repository overview
 ├── PROJECT_DOCUMENTATION.md              # Complete architecture & features guide
@@ -315,7 +311,6 @@ expense_tracker/
 │   │   │   └── app_constants.dart        # Categories, icons, colors, Firestore keys
 │   │   ├── services/
 │   │   │   ├── deepseek_service.dart     # DeepSeek AI API integration (budget, chat, OCR)
-│   │   │   ├── location_service.dart     # Background location monitoring service
 │   │   │   └── notification_service.dart # Local notification scheduler & handlers
 │   │   ├── theme/
 │   │   │   └── app_theme.dart            # Light & dark themes, color palette, gradients
@@ -385,17 +380,8 @@ expense_tracker/
 - **Firebase Project**: Configured with Authentication & Cloud Firestore
 - **DeepSeek API Key**: For AI Budget Planner, Auto-Categorization, and Savings Coach
 
-### 2. Environment Variables (`.env`)
-Create a `.env` file in the project root:
-```env
-DEEPSEEK_API_KEY=your_deepseek_api_key_here
-```
-Ensure `.env` is listed under assets in `pubspec.yaml`:
-```yaml
-flutter:
-  assets:
-    - .env
-```
+### 2. Protected backend configuration
+The app must never bundle an AI provider key. Configure `DEEPSEEK_API_KEY` in Firebase Secret Manager, deploy the functions, and supply the public `SPENDWISE_API_URL` and `PRIVACY_POLICY_URL` through Dart defines. See [PLAY_STORE_RELEASE.md](PLAY_STORE_RELEASE.md).
 
 ### 3. Firebase Setup
 Run the FlutterFire CLI:
@@ -403,7 +389,7 @@ Run the FlutterFire CLI:
 dart pub global activate flutterfire_cli
 flutterfire configure
 ```
-This updates `firebase_options.dart` and links your Android/iOS configurations.
+Register `com.bytesforges.spendwise` and download its Android google-services.json. Android initialization uses that native configuration.
 
 ### 4. Running the App
 ```bash
