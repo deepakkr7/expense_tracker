@@ -1,10 +1,47 @@
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
+
+  Future<bool> refreshTimeZone() async {
+    try {
+      final zone = await FlutterTimezone.getLocalTimezone();
+      final location = tz.getLocation(zone.identifier);
+      final changed = tz.local.name != location.name;
+      tz.setLocalLocation(location);
+      if (changed && await dailyEnabled()) await scheduleDailyTenPMReminder();
+      return changed;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> dailyEnabled() async =>
+      (await SharedPreferences.getInstance()).getBool(
+        'daily_reminder_enabled',
+      ) ??
+      false;
+
+  Future<bool> setDailyEnabled(bool enabled) async {
+    if (enabled && !(await Permission.notification.request()).isGranted)
+      return false;
+    if (enabled) {
+      await scheduleDailyTenPMReminder();
+    } else {
+      await cancelNotification(100);
+    }
+    await (await SharedPreferences.getInstance()).setBool(
+      'daily_reminder_enabled',
+      enabled,
+    );
+    return true;
+  }
 
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -15,9 +52,9 @@ class NotificationService {
 
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-          requestSoundPermission: true,
-          requestBadgePermission: true,
-          requestAlertPermission: true,
+          requestSoundPermission: false,
+          requestBadgePermission: false,
+          requestAlertPermission: false,
         );
 
     const InitializationSettings initializationSettings =
@@ -61,7 +98,12 @@ class NotificationService {
     required String title,
     required String body,
     required DateTime scheduledDate,
+    bool requestPermission = true,
   }) async {
+    final permission = requestPermission
+        ? await Permission.notification.request()
+        : await Permission.notification.status;
+    if (!permission.isGranted) return;
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
           'bill_reminders',
@@ -79,9 +121,13 @@ class NotificationService {
       return;
     }
 
-    final tz.TZDateTime tzScheduledDate = tz.TZDateTime.from(
-      scheduledDate,
+    final tz.TZDateTime tzScheduledDate = tz.TZDateTime(
       tz.local,
+      scheduledDate.year,
+      scheduledDate.month,
+      scheduledDate.day,
+      scheduledDate.hour,
+      scheduledDate.minute,
     );
 
     try {
@@ -94,7 +140,7 @@ class NotificationService {
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
     } catch (e) {
-      print('Failed to schedule bill reminder notification: $e');
+      // Notifications can be disabled in device settings.
     }
   }
 
@@ -111,57 +157,39 @@ class NotificationService {
       android: androidPlatformChannelSpecifics,
     );
 
-    try {
-      await _flutterLocalNotificationsPlugin.zonedSchedule(
-        id: 100, // Fixed ID for daily reminder
-        title: 'How much did you spend today? 💸',
-        body: 'Take 10 seconds to add your daily expenses before the day ends!',
-        scheduledDate: _nextInstanceOfTenPM(),
-        notificationDetails: platformChannelSpecifics,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        matchDateTimeComponents:
-            DateTimeComponents.time, // Matches the time every day
-      );
-    } catch (e) {
-      print('Failed to schedule daily reminder notification: $e');
-    }
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      id: 100, // Fixed ID for daily reminder
+      title: 'How much did you spend today? 💸',
+      body: 'Take 10 seconds to add your daily expenses before the day ends!',
+      scheduledDate: nextDailyReminder(tz.TZDateTime.now(tz.local)),
+      notificationDetails: platformChannelSpecifics,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents:
+          DateTimeComponents.time, // Matches the time every day
+    );
   }
 
-  tz.TZDateTime _nextInstanceOfTenPM() {
-    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+  static tz.TZDateTime nextDailyReminder(tz.TZDateTime now) {
     tz.TZDateTime scheduledDate = tz.TZDateTime(
-      tz.local,
+      now.location,
       now.year,
       now.month,
       now.day,
       22,
     );
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    if (!scheduledDate.isAfter(now)) {
+      scheduledDate = tz.TZDateTime(
+        now.location,
+        now.year,
+        now.month,
+        now.day + 1,
+        22,
+      );
     }
     return scheduledDate;
   }
 
-  Future<void> showLocationBasedExpenseReminder() async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-          'location_reminders',
-          'Location Reminders',
-          channelDescription: 'Reminders when leaving a store',
-          importance: Importance.high,
-          priority: Priority.high,
-        );
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-    );
-
-    await _flutterLocalNotificationsPlugin.show(
-      id: 200, // Fixed ID
-      title: 'Did you just make a purchase? 🛒',
-      body: 'You are on the move! Tap here to quickly log any expenses.',
-      notificationDetails: platformChannelSpecifics,
-    );
-  }
+  Future<void> cancelAll() => _flutterLocalNotificationsPlugin.cancelAll();
 
   Future<void> cancelNotification(int id) async {
     await _flutterLocalNotificationsPlugin.cancel(id: id);

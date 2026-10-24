@@ -1,3 +1,5 @@
+import '../../widgets/bill_reminder_time_field.dart';
+import '../../../core/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -22,8 +24,9 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
   final _notesController = TextEditingController();
 
   String _selectedCategory = AppConstants.expenseCategories.first;
-  DateTime _dueDate = DateTime.now().add(const Duration(days: 7));
+  DateTime _dueDate = DateTime.now().add(Duration(days: 7));
   RecurrenceType _recurrenceType = RecurrenceType.monthly;
+  TimeOfDay _reminderTime = const TimeOfDay(hour: 9, minute: 0);
   int _reminderDaysBefore = 3;
   int? _customIntervalDays;
   bool _autoCreateExpense = true;
@@ -42,7 +45,7 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
       context: context,
       initialDate: _dueDate,
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      lastDate: DateTime.now().add(Duration(days: 365 * 2)),
     );
     if (picked != null && picked != _dueDate) {
       setState(() {
@@ -59,7 +62,7 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
     if (_recurrenceType == RecurrenceType.custom &&
         _customIntervalDays == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter custom interval days')),
+        SnackBar(content: Text('Please enter custom interval days')),
       );
       return;
     }
@@ -71,7 +74,7 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
       final billProvider = context.read<BillReminderProvider>();
 
       final bill = BillReminderModel(
-        id: const Uuid().v4(),
+        id: Uuid().v4(),
         userId: authProvider.currentUser!.id,
         billName: _billNameController.text.trim(),
         amount: double.parse(_amountController.text),
@@ -80,6 +83,9 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
         recurrenceType: _recurrenceType,
         customIntervalDays: _customIntervalDays,
         reminderDaysBefore: _reminderDaysBefore,
+        reminderHour: _reminderTime.hour,
+        reminderMinute: _reminderTime.minute,
+        recurrenceDay: _dueDate.day,
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
@@ -91,7 +97,7 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Bill reminder added successfully!'),
             backgroundColor: AppTheme.successColor,
           ),
@@ -113,9 +119,9 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Bill Reminder')),
+      appBar: AppBar(title: Text('Add Bill Reminder')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -124,7 +130,7 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
               // Bill Name
               TextFormField(
                 controller: _billNameController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Bill Name',
                   prefixIcon: Icon(Icons.receipt),
                   hintText: 'e.g., Rent, Electricity',
@@ -136,17 +142,16 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Amount
               TextFormField(
                 controller: _amountController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
                 ),
-                decoration: const InputDecoration(
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
                   labelText: 'Amount',
                   prefixText: '₹ ',
                   prefixStyle: TextStyle(
@@ -154,28 +159,19 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter amount';
-                  }
-                  final amount = double.tryParse(value);
-                  if (amount == null || amount <= 0) {
-                    return 'Please enter valid amount';
-                  }
-                  return null;
-                },
+                validator: Validators.validateAmount,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Category
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Category',
                   prefixIcon: Icon(Icons.category),
                 ),
                 dropdownColor: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey[850]
+                    ? Theme.of(context).colorScheme.surface
                     : Colors.white,
                 style: TextStyle(
                   color: Theme.of(context).brightness == Brightness.dark
@@ -193,7 +189,7 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
                           size: 20,
                           color: AppConstants.categoryColors[category],
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         Text(category),
                       ],
                     ),
@@ -203,13 +199,13 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
                   setState(() => _selectedCategory = value!);
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Due Date
               InkWell(
                 onTap: _selectDueDate,
                 child: InputDecorator(
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Due Date',
                     prefixIcon: Icon(Icons.calendar_today),
                   ),
@@ -217,22 +213,22 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(DateFormat('MMM dd, yyyy').format(_dueDate)),
-                      const Icon(Icons.arrow_drop_down),
+                      Icon(Icons.arrow_drop_down),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Recurrence Type
               DropdownButtonFormField<RecurrenceType>(
                 value: _recurrenceType,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Recurrence',
                   prefixIcon: Icon(Icons.repeat),
                 ),
                 dropdownColor: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey[850]
+                    ? Theme.of(context).colorScheme.surface
                     : Colors.white,
                 style: TextStyle(
                   color: Theme.of(context).brightness == Brightness.dark
@@ -240,7 +236,7 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
                       : Colors.black,
                   fontSize: 16,
                 ),
-                items: const [
+                items: [
                   DropdownMenuItem(
                     value: RecurrenceType.none,
                     child: Text('One-time only'),
@@ -249,19 +245,19 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
                     value: RecurrenceType.weekly,
                     child: Text('Weekly'),
                   ),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: RecurrenceType.monthly,
                     child: Text('Monthly'),
                   ),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: RecurrenceType.quarterly,
                     child: Text('Quarterly (Every 3 months)'),
                   ),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: RecurrenceType.yearly,
                     child: Text('Yearly'),
                   ),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: RecurrenceType.custom,
                     child: Text('Custom Interval'),
                   ),
@@ -273,10 +269,10 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
 
               // Custom Interval (if selected)
               if (_recurrenceType == RecurrenceType.custom) ...[
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 TextFormField(
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Repeat every (days)',
                     prefixIcon: Icon(Icons.event_repeat),
                     hintText: 'e.g., 14 for bi-weekly',
@@ -295,17 +291,17 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
                   },
                 ),
               ],
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Reminder Days Before
               DropdownButtonFormField<int>(
                 value: _reminderDaysBefore,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Remind Me',
                   prefixIcon: Icon(Icons.notifications_active),
                 ),
                 dropdownColor: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey[850]
+                    ? Theme.of(context).colorScheme.surface
                     : Colors.white,
                 style: TextStyle(
                   color: Theme.of(context).brightness == Brightness.dark
@@ -313,7 +309,7 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
                       : Colors.black,
                   fontSize: 16,
                 ),
-                items: const [
+                items: [
                   DropdownMenuItem(value: 0, child: Text('On due date')),
                   DropdownMenuItem(value: 1, child: Text('1 day before')),
                   DropdownMenuItem(value: 3, child: Text('3 days before')),
@@ -324,24 +320,30 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
                   setState(() => _reminderDaysBefore = value!);
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Notes
+              BillReminderTimeField(
+                dueDate: _dueDate,
+                daysBefore: _reminderDaysBefore,
+                time: _reminderTime,
+                onChanged: (value) => setState(() => _reminderTime = value),
+              ),
               TextFormField(
                 controller: _notesController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Notes (Optional)',
                   prefixIcon: Icon(Icons.notes),
                   hintText: 'Additional details',
                 ),
                 maxLines: 3,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Auto Create Expense
               SwitchListTile(
-                title: const Text('Auto-add to expenses when paid'),
-                subtitle: const Text(
+                title: Text('Auto-add to expenses when paid'),
+                subtitle: Text(
                   'Automatically create an expense when you mark this bill as paid',
                 ),
                 value: _autoCreateExpense,
@@ -350,7 +352,7 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
                 },
                 activeColor: AppTheme.primaryColor,
               ),
-              const SizedBox(height: 40),
+              SizedBox(height: 40),
 
               // Save Button
               SizedBox(
@@ -361,8 +363,8 @@ class _AddBillReminderScreenState extends State<AddBillReminderScreen> {
                     backgroundColor: AppTheme.primaryColor,
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text(
                           'Add Bill Reminder',
                           style: TextStyle(
                             fontSize: 16,

@@ -1,3 +1,4 @@
+import '../../core/utils/money.dart';
 import 'package:equatable/equatable.dart';
 
 enum RecurrenceType { none, weekly, monthly, quarterly, yearly, custom }
@@ -12,6 +13,9 @@ class BillReminderModel extends Equatable {
   final RecurrenceType recurrenceType;
   final int? customIntervalDays; // For custom recurrence
   final int reminderDaysBefore; // Days before due date to remind
+  final int reminderHour;
+  final int reminderMinute;
+  final int? recurrenceDay;
   final bool isPaid;
   final DateTime? paidDate;
   final String? notes;
@@ -27,6 +31,9 @@ class BillReminderModel extends Equatable {
     this.recurrenceType = RecurrenceType.none,
     this.customIntervalDays,
     this.reminderDaysBefore = 3,
+    this.reminderHour = 9,
+    this.reminderMinute = 0,
+    this.recurrenceDay,
     this.isPaid = false,
     this.paidDate,
     this.notes,
@@ -36,15 +43,33 @@ class BillReminderModel extends Equatable {
   // Check if bill is overdue
   bool get isOverdue {
     if (isPaid) return false;
-    return DateTime.now().isAfter(dueDate);
+    return !DateTime.now().isBefore(
+      DateTime(dueDate.year, dueDate.month, dueDate.day + 1),
+    );
   }
 
   // Check if reminder should be shown
   bool get shouldRemind {
     if (isPaid) return false;
-    final reminderDate = dueDate.subtract(Duration(days: reminderDaysBefore));
+    final reminderDate = reminderDateTime;
     final now = DateTime.now();
-    return now.isAfter(reminderDate) && now.isBefore(dueDate);
+    return !now.isBefore(reminderDate) &&
+        now.isBefore(DateTime(dueDate.year, dueDate.month, dueDate.day + 1));
+  }
+
+  DateTime get reminderDateTime => DateTime(
+    dueDate.year,
+    dueDate.month,
+    dueDate.day - reminderDaysBefore,
+    reminderHour,
+    reminderMinute,
+  );
+
+  DateTime _monthDate(int months) {
+    final month = DateTime(dueDate.year, dueDate.month + months);
+    final lastDay = DateTime(month.year, month.month + 1, 0).day;
+    final day = recurrenceDay ?? dueDate.day;
+    return DateTime(month.year, month.month, day > lastDay ? lastDay : day);
   }
 
   // Get next due date for recurring bills
@@ -53,16 +78,20 @@ class BillReminderModel extends Equatable {
 
     switch (recurrenceType) {
       case RecurrenceType.weekly:
-        return dueDate.add(const Duration(days: 7));
+        return DateTime(dueDate.year, dueDate.month, dueDate.day + 7);
       case RecurrenceType.monthly:
-        return DateTime(dueDate.year, dueDate.month + 1, dueDate.day);
+        return _monthDate(1);
       case RecurrenceType.quarterly:
-        return DateTime(dueDate.year, dueDate.month + 3, dueDate.day);
+        return _monthDate(3);
       case RecurrenceType.yearly:
-        return DateTime(dueDate.year + 1, dueDate.month, dueDate.day);
+        return _monthDate(12);
       case RecurrenceType.custom:
         if (customIntervalDays != null) {
-          return dueDate.add(Duration(days: customIntervalDays!));
+          return DateTime(
+            dueDate.year,
+            dueDate.month,
+            dueDate.day + customIntervalDays!,
+          );
         }
         return null;
       default:
@@ -76,12 +105,16 @@ class BillReminderModel extends Equatable {
       'id': id,
       'userId': userId,
       'billName': billName,
-      'amount': amount,
+      'amount': Money.normalize(amount),
+      'amountMinor': Money.minor(amount),
       'category': category,
       'dueDate': dueDate.toIso8601String(),
       'recurrenceType': recurrenceType.toString(),
       'customIntervalDays': customIntervalDays,
       'reminderDaysBefore': reminderDaysBefore,
+      'reminderHour': reminderHour,
+      'reminderMinute': reminderMinute,
+      'recurrenceDay': recurrenceDay ?? dueDate.day,
       'isPaid': isPaid,
       'paidDate': paidDate?.toIso8601String(),
       'notes': notes,
@@ -95,7 +128,9 @@ class BillReminderModel extends Equatable {
       id: map['id'] as String,
       userId: map['userId'] as String,
       billName: map['billName'] as String,
-      amount: (map['amount'] as num).toDouble(),
+      amount: map['amountMinor'] is int
+          ? (map['amountMinor'] as int) / 100
+          : Money.normalize(map['amount'] as num),
       category: map['category'] as String,
       dueDate: DateTime.parse(map['dueDate'] as String),
       recurrenceType: RecurrenceType.values.firstWhere(
@@ -104,6 +139,9 @@ class BillReminderModel extends Equatable {
       ),
       customIntervalDays: map['customIntervalDays'] as int?,
       reminderDaysBefore: map['reminderDaysBefore'] as int? ?? 3,
+      reminderHour: map['reminderHour'] as int? ?? 9,
+      reminderMinute: map['reminderMinute'] as int? ?? 0,
+      recurrenceDay: map['recurrenceDay'] as int?,
       isPaid: map['isPaid'] as bool? ?? false,
       paidDate: map['paidDate'] != null
           ? DateTime.parse(map['paidDate'] as String)
@@ -124,6 +162,9 @@ class BillReminderModel extends Equatable {
     RecurrenceType? recurrenceType,
     int? customIntervalDays,
     int? reminderDaysBefore,
+    int? reminderHour,
+    int? reminderMinute,
+    int? recurrenceDay,
     bool? isPaid,
     DateTime? paidDate,
     String? notes,
@@ -139,8 +180,11 @@ class BillReminderModel extends Equatable {
       recurrenceType: recurrenceType ?? this.recurrenceType,
       customIntervalDays: customIntervalDays ?? this.customIntervalDays,
       reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
+      reminderHour: reminderHour ?? this.reminderHour,
+      reminderMinute: reminderMinute ?? this.reminderMinute,
+      recurrenceDay: recurrenceDay ?? this.recurrenceDay ?? this.dueDate.day,
       isPaid: isPaid ?? this.isPaid,
-      paidDate: paidDate ?? this.paidDate,
+      paidDate: isPaid == false ? null : paidDate ?? this.paidDate,
       notes: notes ?? this.notes,
       autoCreateExpense: autoCreateExpense ?? this.autoCreateExpense,
     );
@@ -157,6 +201,9 @@ class BillReminderModel extends Equatable {
     recurrenceType,
     customIntervalDays,
     reminderDaysBefore,
+    reminderHour,
+    reminderMinute,
+    recurrenceDay,
     isPaid,
     paidDate,
     notes,

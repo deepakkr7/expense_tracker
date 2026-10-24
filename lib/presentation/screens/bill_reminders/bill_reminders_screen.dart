@@ -52,7 +52,7 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bill Reminders'),
+        title: Text('Bill Reminders'),
         bottom: TabBar(
           controller: _tabController,
           tabs: [
@@ -60,24 +60,18 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Upcoming'),
+                  Text('Upcoming'),
                   if (billsByStatus['upcoming']!.isNotEmpty)
                     Container(
-                      margin: const EdgeInsets.only(left: 3),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 1,
-                      ),
+                      margin: EdgeInsets.only(left: 3),
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
                         color: AppTheme.primaryColor,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '${billsByStatus['upcoming']!.length}',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(fontSize: 10, color: Colors.white),
                       ),
                     ),
                 ],
@@ -87,30 +81,24 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Overdue'),
+                  Text('Overdue'),
                   if (billsByStatus['overdue']!.isNotEmpty)
                     Container(
-                      margin: const EdgeInsets.only(left: 3),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 1,
-                      ),
+                      margin: EdgeInsets.only(left: 3),
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '${billsByStatus['overdue']!.length}',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(fontSize: 10, color: Colors.white),
                       ),
                     ),
                 ],
               ),
             ),
-            const Tab(text: 'Paid'),
+            Tab(text: 'Paid'),
           ],
         ),
       ),
@@ -136,12 +124,12 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
         onPressed: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddBillReminderScreen()),
+            MaterialPageRoute(builder: (_) => AddBillReminderScreen()),
           );
           _loadData();
         },
-        icon: const Icon(Icons.add),
-        label: const Text('Add Bill'),
+        icon: Icon(Icons.add),
+        label: Text('Add Bill'),
         backgroundColor: AppTheme.primaryColor,
       ),
     );
@@ -150,13 +138,10 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
   Widget _buildSummaryCard(BillReminderProvider billProvider) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.primaryColor.withOpacity(0.7),
-          ],
+          colors: [AppTheme.primaryColor, Color(0xFF5146C9)],
         ),
       ),
       child: Column(
@@ -191,7 +176,7 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
           label,
           style: TextStyle(color: color.withOpacity(0.8), fontSize: 12),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Text(
           count,
           style: TextStyle(
@@ -221,16 +206,18 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
             Icon(
               type == 'paid' ? Icons.check_circle_outline : Icons.receipt_long,
               size: 64,
-              color: Colors.grey[400],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               type == 'upcoming'
                   ? 'No upcoming bills'
                   : type == 'overdue'
                   ? 'No overdue bills'
                   : 'No paid bills this month',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -238,7 +225,7 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       itemCount: bills.length,
       itemBuilder: (context, index) {
         final bill = bills[index];
@@ -257,7 +244,7 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
     final isPaid = type == 'paid';
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () async {
           await Navigator.push(
@@ -270,7 +257,7 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -278,7 +265,7 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
                 children: [
                   // Icon
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color:
                           (isOverdue
@@ -299,7 +286,7 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
                       size: 24,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 16),
                   // Details
                   Expanded(
                     child: Column(
@@ -307,29 +294,33 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
                       children: [
                         Text(
                           bill.billName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Row(
                           children: [
                             Icon(
                               Icons.calendar_today,
                               size: 14,
-                              color: Colors.grey[600],
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text(
                               DateFormat('MMM dd, yyyy').format(bill.dueDate),
                               style: TextStyle(
-                                color: Colors.grey[600],
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                                 fontSize: 12,
                               ),
                             ),
                             if (!isPaid) ...[
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12),
                               Flexible(
                                 child: Text(
                                   isOverdue
@@ -342,7 +333,9 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
                                         ? Colors.red
                                         : daysUntilDue <= 3
                                         ? Colors.orange
-                                        : Colors.grey[600],
+                                        : Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -373,8 +366,8 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
                       ),
                       if (bill.recurrenceType != RecurrenceType.none)
                         Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(
+                          margin: EdgeInsets.only(top: 4),
+                          padding: EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 2,
                           ),
@@ -384,9 +377,12 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
                           ),
                           child: Text(
                             _getRecurrenceLabel(bill.recurrenceType),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
-                              color: Colors.blue,
+                              color: AppTheme.readableColor(
+                                context,
+                                Colors.blue,
+                              ),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -396,21 +392,24 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
                 ],
               ),
               if (bill.notes != null && bill.notes!.isNotEmpty) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text(
                   bill.notes!,
-                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
                 ),
               ],
               if (!isPaid) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     if (isOverdue)
                       TextButton.icon(
-                        icon: const Icon(Icons.snooze, size: 16),
-                        label: const Text(
+                        icon: Icon(Icons.snooze, size: 16),
+                        label: Text(
                           'Snooze 7d',
                           style: TextStyle(fontSize: 13),
                         ),
@@ -418,7 +417,7 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
                           await billProvider.snoozeBill(bill, 7);
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 content: Text('Bill snoozed for 7 days'),
                               ),
                             );
@@ -426,32 +425,45 @@ class _BillRemindersScreenState extends State<BillRemindersScreen>
                         },
                       ),
                     TextButton.icon(
-                      icon: const Icon(Icons.check_circle, size: 16),
-                      label: const Text(
+                      icon: Icon(Icons.check_circle, size: 16),
+                      label: Text(
                         'Mark As Paid',
                         style: TextStyle(fontSize: 13),
                       ),
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.green,
                       ),
-                      onPressed: () async {
-                        await billProvider.markBillAsPaid(
-                          bill,
-                          expenseProvider,
-                          authProvider.currentUser!.id,
-                        );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                bill.autoCreateExpense
-                                    ? 'Bill marked as paid & expense added!'
-                                    : 'Bill marked as paid!',
-                              ),
-                            ),
-                          );
-                        }
-                      },
+                      onPressed: billProvider.isLoading
+                          ? null
+                          : () async {
+                              try {
+                                await billProvider.markBillAsPaid(
+                                  bill,
+                                  expenseProvider,
+                                  authProvider.currentUser!.id,
+                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        bill.autoCreateExpense
+                                            ? 'Bill marked as paid & expense added!'
+                                            : 'Bill marked as paid!',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } catch (_) {
+                                if (context.mounted)
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Could not record payment. Check your connection and try again.',
+                                      ),
+                                    ),
+                                  );
+                              }
+                            },
                     ),
                   ],
                 ),
