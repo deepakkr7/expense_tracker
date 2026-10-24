@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'session_notifier.dart';
 import '../data/models/savings_goal_model.dart';
 import '../data/repositories/savings_goal_repository.dart';
 
-class SavingsGoalProvider with ChangeNotifier {
+class SavingsGoalProvider extends SessionNotifier {
   final SavingsGoalRepository _repository = SavingsGoalRepository();
 
   List<SavingsGoalModel> _goals = [];

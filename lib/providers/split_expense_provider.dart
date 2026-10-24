@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'session_notifier.dart';
 import '../data/models/split_expense_model.dart';
 import '../data/repositories/split_expense_repository.dart';
 
-class SplitExpenseProvider with ChangeNotifier {
+class SplitExpenseProvider extends SessionNotifier {
   final SplitExpenseRepository _repository = SplitExpenseRepository();
 
   List<SplitExpenseModel> _splitExpenses = [];

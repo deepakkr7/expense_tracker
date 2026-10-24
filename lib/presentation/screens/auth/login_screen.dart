@@ -1,3 +1,5 @@
+import 'password_reset_screen.dart';
+import '../../widgets/privacy_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
@@ -25,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: Duration(milliseconds: 1500),
       vsync: this,
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -85,11 +87,11 @@ class _LoginScreenState extends State<LoginScreen>
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+        decoration: BoxDecoration(gradient: AppTheme.primaryGradient),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: Column(
@@ -97,18 +99,20 @@ class _LoginScreenState extends State<LoginScreen>
                   children: [
                     // App Logo/Title
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surface.withOpacity(0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.account_balance_wallet,
                         size: 80,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
                     Text(
                       'SpendWise',
                       style: Theme.of(context).textTheme.displayMedium
@@ -117,26 +121,26 @@ class _LoginScreenState extends State<LoginScreen>
                             fontWeight: FontWeight.bold,
                           ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       'Manage your money wisely',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Colors.white.withOpacity(0.9),
                       ),
                     ),
-                    const SizedBox(height: 48),
+                    SizedBox(height: 48),
 
                     // Login Form Card
                     Container(
-                      padding: const EdgeInsets.all(24),
+                      padding: EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.1),
                             blurRadius: 20,
-                            offset: const Offset(0, 10),
+                            offset: Offset(0, 10),
                           ),
                         ],
                       ),
@@ -150,19 +154,19 @@ class _LoginScreenState extends State<LoginScreen>
                               style: Theme.of(context).textTheme.displaySmall,
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 24),
+                            SizedBox(height: 24),
 
                             // Email Field
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Email',
                                 prefixIcon: Icon(Icons.email_outlined),
                               ),
                               validator: Validators.validateEmail,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
 
                             // Password Field
                             TextFormField(
@@ -170,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen>
                               obscureText: _obscurePassword,
                               decoration: InputDecoration(
                                 labelText: 'Password',
-                                prefixIcon: const Icon(Icons.lock_outline),
+                                prefixIcon: Icon(Icons.lock_outline),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword
@@ -186,8 +190,22 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               validator: Validators.validatePassword,
                             ),
-                            const SizedBox(height: 24),
+                            SizedBox(height: 24),
 
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => PasswordResetScreen(
+                                      email: _emailController.text.trim(),
+                                    ),
+                                  ),
+                                ),
+                                child: const Text('Forgot password?'),
+                              ),
+                            ),
                             // Login Button
                             SizedBox(
                               height: 56,
@@ -197,7 +215,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     ? null
                                     : _handleEmailLogin,
                                 child: authProvider.status == AuthStatus.loading
-                                    ? const SizedBox(
+                                    ? SizedBox(
                                         height: 24,
                                         width: 24,
                                         child: CircularProgressIndicator(
@@ -205,32 +223,42 @@ class _LoginScreenState extends State<LoginScreen>
                                           strokeWidth: 2,
                                         ),
                                       )
-                                    : const Text('Login'),
+                                    : Text('Login'),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
 
                             // Divider
                             Row(
                               children: [
                                 Expanded(
-                                  child: Divider(color: Colors.grey[300]),
+                                  child: Divider(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
+                                  ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
                                   child: Text(
                                     'OR',
-                                    style: TextStyle(color: Colors.grey[600]),
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
                                 ),
                                 Expanded(
-                                  child: Divider(color: Colors.grey[300]),
+                                  child: Divider(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
+                                  ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
 
                             // Google Sign In Button
                             SizedBox(
@@ -244,36 +272,46 @@ class _LoginScreenState extends State<LoginScreen>
                                   'https://www.google.com/favicon.ico',
                                   height: 24,
                                   errorBuilder: (_, __, ___) =>
-                                      const Icon(Icons.g_mobiledata),
+                                      Icon(Icons.g_mobiledata),
                                 ),
-                                label: const Text('Sign in with Google'),
+                                label: Text('Sign in with Google'),
                                 style: OutlinedButton.styleFrom(
-                                  side: BorderSide(color: Colors.grey[300]!),
-                                  foregroundColor: AppTheme.textPrimaryColor,
+                                  side: BorderSide(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
+                                  ),
+                                  foregroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            SizedBox(height: 24),
 
+                            PrivacyNotice(),
                             // Register Link
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
                                   "Don't have an account? ",
-                                  style: TextStyle(color: Colors.grey[600]),
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                                 TextButton(
                                   onPressed: () {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) =>
-                                            const RegistrationScreen(),
+                                        builder: (_) => RegistrationScreen(),
                                       ),
                                     );
                                   },
-                                  child: const Text('Sign Up'),
+                                  child: Text('Sign Up'),
                                 ),
                               ],
                             ),

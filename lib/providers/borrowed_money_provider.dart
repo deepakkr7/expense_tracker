@@ -1,12 +1,12 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'session_notifier.dart';
 import 'package:uuid/uuid.dart';
 import '../data/models/borrowed_money_model.dart';
 import '../data/models/expense_model.dart';
 import '../data/repositories/borrowed_money_repository.dart';
 import '../data/repositories/expense_repository.dart';
 
-class BorrowedMoneyProvider with ChangeNotifier {
+class BorrowedMoneyProvider extends SessionNotifier {
   final BorrowedMoneyRepository _repository = BorrowedMoneyRepository();
   final ExpenseRepository _expenseRepository = ExpenseRepository();
   final _uuid = const Uuid();

@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'session_notifier.dart';
 import '../data/models/group_model.dart';
 import '../data/repositories/group_repository.dart';
 
-class GroupProvider with ChangeNotifier {
+class GroupProvider extends SessionNotifier {
   final GroupRepository _repository = GroupRepository();
 
   List<GroupModel> _groups = [];

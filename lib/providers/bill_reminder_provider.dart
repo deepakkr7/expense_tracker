@@ -1,12 +1,10 @@
-import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
+import 'session_notifier.dart';
 import '../data/models/bill_reminder_model.dart';
-import '../data/models/expense_model.dart';
 import '../data/repositories/bill_reminder_repository.dart';
 import '../core/services/notification_service.dart';
 import 'expense_provider.dart';
 
-class BillReminderProvider with ChangeNotifier {
+class BillReminderProvider extends SessionNotifier {
   final BillReminderRepository _repository = BillReminderRepository();
 
   List<BillReminderModel> _bills = [];
@@ -40,7 +38,7 @@ class BillReminderProvider with ChangeNotifier {
       notifyListeners();
 
       await _repository.addBillReminder(bill);
-      _scheduleNotification(bill);
+      await _scheduleNotification(bill);
 
       _isLoading = false;
       notifyListeners();
@@ -60,7 +58,7 @@ class BillReminderProvider with ChangeNotifier {
       notifyListeners();
 
       await _repository.updateBillReminder(bill);
-      _scheduleNotification(bill);
+      await _scheduleNotification(bill);
 
       _isLoading = false;
       notifyListeners();
@@ -80,7 +78,7 @@ class BillReminderProvider with ChangeNotifier {
       notifyListeners();
 
       await _repository.deleteBillReminder(userId, billId);
-      NotificationService().cancelNotification(billId.hashCode);
+      NotificationService().cancelNotification(notificationId(billId));
 
       _isLoading = false;
       notifyListeners();
@@ -103,36 +101,13 @@ class BillReminderProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // Mark bill as paid
-      final updatedBill = bill.copyWith(isPaid: true, paidDate: DateTime.now());
-      await updateBillReminder(updatedBill);
-
-      // Create expense if enabled
-      if (createExpense && bill.autoCreateExpense) {
-        final expense = ExpenseModel(
-          id: const Uuid().v4(),
-          userId: userId,
-          amount: bill.amount,
-          category: bill.category,
-          description: '${bill.billName} (Bill Payment)',
-          date: DateTime.now(),
-        );
-        await expenseProvider.addExpense(expense);
-      }
-
-      // Create next recurring bill if applicable
-      if (bill.recurrenceType != RecurrenceType.none) {
-        final nextDueDate = bill.getNextDueDate();
-        if (nextDueDate != null) {
-          final nextBill = bill.copyWith(
-            id: const Uuid().v4(),
-            dueDate: nextDueDate,
-            isPaid: false,
-            paidDate: null,
-          );
-          await addBillReminder(nextBill);
-        }
-      }
+      final next = await _repository.payBill(
+        userId,
+        bill.id,
+        createExpense: createExpense,
+      );
+      await _scheduleNotification(bill.copyWith(isPaid: true));
+      if (next != null) await _scheduleNotification(next);
 
       _isLoading = false;
       notifyListeners();
@@ -147,102 +122,156 @@ class BillReminderProvider with ChangeNotifier {
   // Snooze bill (move due date forward)
   Future<void> snoozeBill(BillReminderModel bill, int days) async {
     final snoozedBill = bill.copyWith(
-      dueDate: bill.dueDate.add(Duration(days: days)),
+      dueDate: DateTime(
+        bill.dueDate.year,
+        bill.dueDate.month,
+        bill.dueDate.day + days,
+      ),
     );
     await updateBillReminder(snoozedBill);
   }
 
   // Handle notification scheduling
-  void _scheduleNotification(BillReminderModel bill) {
-    if (bill.isPaid) {
-      NotificationService().cancelNotification(bill.id.hashCode);
-      return;
+  Future<void> _scheduleNotification(
+    BillReminderModel bill, {
+    bool requestPermission = true,
+  }) async {
+    try {
+      if (bill.isPaid) {
+        await NotificationService().cancelNotification(notificationId(bill.id));
+        return;
+      }
+
+      final reminderDate = bill.reminderDateTime;
+      await NotificationService().cancelNotification(notificationId(bill.id));
+
+      if (reminderDate.isAfter(DateTime.now())) {
+        await NotificationService().scheduleBillReminder(
+          requestPermission: requestPermission,
+          id: notificationId(bill.id),
+          title: 'Reminder: ${bill.billName}',
+          body:
+              '₹${bill.amount.toStringAsFixed(0)} due on ${bill.dueDate.day}/${bill.dueDate.month}/${bill.dueDate.year}',
+          scheduledDate: reminderDate,
+        );
+      } else if (DateTime(
+        bill.dueDate.year,
+        bill.dueDate.month,
+        bill.dueDate.day,
+        bill.reminderHour,
+        bill.reminderMinute,
+      ).isAfter(DateTime.now())) {
+        await NotificationService().scheduleBillReminder(
+          requestPermission: requestPermission,
+          id: notificationId(bill.id),
+          title: 'Bill Due: ${bill.billName}',
+          body:
+              '₹${bill.amount.toStringAsFixed(0)} is due on ${bill.dueDate.day}/${bill.dueDate.month}',
+          scheduledDate: DateTime(
+            bill.dueDate.year,
+            bill.dueDate.month,
+            bill.dueDate.day,
+            bill.reminderHour,
+            bill.reminderMinute,
+          ),
+        );
+      }
+    } catch (_) {
+      /* Keep a successful data save successful. */
     }
+  }
 
-    final reminderDate = bill.dueDate.subtract(
-      Duration(days: bill.reminderDaysBefore),
-    );
+  // Stable IDs survive app restarts.
+  static int notificationId(String value) {
+    var hash = 2166136261;
+    for (final unit in value.codeUnits) {
+      hash = ((hash ^ unit) * 16777619) & 0x7fffffff;
+    }
+    return hash < 1000 ? hash + 1000 : hash;
+  }
 
-    if (reminderDate.isAfter(DateTime.now())) {
-      NotificationService().scheduleBillReminder(
-        id: bill.id.hashCode,
-        title: 'Reminder: ${bill.billName}',
-        body:
-            '₹${bill.amount.toStringAsFixed(0)} due on ${bill.dueDate.day}/${bill.dueDate.month}/${bill.dueDate.year}',
-        scheduledDate: reminderDate,
-      );
-    } else if (bill.dueDate.isAfter(DateTime.now())) {
-      NotificationService().scheduleBillReminder(
-        id: bill.id.hashCode,
-        title: 'Bill Due: ${bill.billName}',
-        body: '₹${bill.amount.toStringAsFixed(0)} is due today!',
-        scheduledDate: bill.dueDate,
-      );
+  Future<void> refreshReminders() async {
+    for (final bill in _bills) {
+      await _scheduleNotification(bill, requestPermission: false);
     }
   }
 
   // Load all bills
   void loadBills(String userId) {
-    _repository
-        .getBillRemindersStream(userId)
-        .listen(
-          (bills) {
-            _bills = bills;
-            notifyListeners();
-          },
-          onError: (error) {
-            _errorMessage = error.toString();
-            notifyListeners();
-          },
-        );
+    watch(
+      'stream0',
+      _repository
+          .getBillRemindersStream(userId)
+          .listen(
+            (bills) {
+              _bills = bills;
+              refreshReminders();
+              notifyListeners();
+            },
+            onError: (error) {
+              _errorMessage = error.toString();
+              notifyListeners();
+            },
+          ),
+    );
   }
 
   // Load unpaid bills
   void loadUnpaidBills(String userId) {
-    _repository
-        .getUnpaidBillsStream(userId)
-        .listen(
-          (bills) {
-            _bills = bills;
-            notifyListeners();
-          },
-          onError: (error) {
-            _errorMessage = error.toString();
-            notifyListeners();
-          },
-        );
+    watch(
+      'stream1',
+      _repository
+          .getUnpaidBillsStream(userId)
+          .listen(
+            (bills) {
+              _bills = bills;
+              refreshReminders();
+              notifyListeners();
+            },
+            onError: (error) {
+              _errorMessage = error.toString();
+              notifyListeners();
+            },
+          ),
+    );
   }
 
   // Load upcoming bills
   void loadUpcomingBills(String userId) {
-    _repository
-        .getUpcomingBillsStream(userId)
-        .listen(
-          (bills) {
-            _upcomingBills = bills;
-            notifyListeners();
-          },
-          onError: (error) {
-            _errorMessage = error.toString();
-            notifyListeners();
-          },
-        );
+    watch(
+      'stream2',
+      _repository
+          .getUpcomingBillsStream(userId)
+          .listen(
+            (bills) {
+              _upcomingBills = bills;
+              notifyListeners();
+            },
+            onError: (error) {
+              _errorMessage = error.toString();
+              notifyListeners();
+            },
+          ),
+    );
   }
 
   // Load overdue bills
   void loadOverdueBills(String userId) {
-    _repository
-        .getOverdueBillsStream(userId)
-        .listen(
-          (bills) {
-            _overdueBills = bills;
-            notifyListeners();
-          },
-          onError: (error) {
-            _errorMessage = error.toString();
-            notifyListeners();
-          },
-        );
+    watch(
+      'stream3',
+      _repository
+          .getOverdueBillsStream(userId)
+          .listen(
+            (bills) {
+              _overdueBills = bills;
+              notifyListeners();
+            },
+            onError: (error) {
+              _errorMessage = error.toString();
+              notifyListeners();
+            },
+          ),
+    );
   }
 
   // Get bills grouped by status

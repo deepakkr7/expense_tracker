@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
+import 'session_notifier.dart';
 import '../data/models/monthly_expense_model.dart';
 import '../data/repositories/monthly_expense_repository.dart';
 
-class MonthlyExpenseProvider with ChangeNotifier {
+class MonthlyExpenseProvider extends SessionNotifier {
   final MonthlyExpenseRepository _repository = MonthlyExpenseRepository();
 
   MonthlyExpenseModel? _currentMonthlyExpense;
@@ -85,37 +85,43 @@ class MonthlyExpenseProvider with ChangeNotifier {
 
   // Subscribe to monthly expense stream
   void subscribeToMonthlyExpense(String userId, DateTime month) {
-    _repository
-        .getMonthlyExpenseStream(userId, month)
-        .listen(
-          (monthlyExpense) {
-            _currentMonthlyExpense = monthlyExpense;
-            if (monthlyExpense != null) {
-              _categoryExpenses = Map.from(monthlyExpense.categoryExpenses);
-            }
-            notifyListeners();
-          },
-          onError: (error) {
-            _errorMessage = error.toString();
-            notifyListeners();
-          },
-        );
+    watch(
+      'stream0',
+      _repository
+          .getMonthlyExpenseStream(userId, month)
+          .listen(
+            (monthlyExpense) {
+              _currentMonthlyExpense = monthlyExpense;
+              if (monthlyExpense != null) {
+                _categoryExpenses = Map.from(monthlyExpense.categoryExpenses);
+              }
+              notifyListeners();
+            },
+            onError: (error) {
+              _errorMessage = error.toString();
+              notifyListeners();
+            },
+          ),
+    );
   }
 
   // Load all monthly expenses
   void loadAllMonthlyExpenses(String userId) {
-    _repository
-        .getAllMonthlyExpensesStream(userId)
-        .listen(
-          (expenses) {
-            _allMonthlyExpenses = expenses;
-            notifyListeners();
-          },
-          onError: (error) {
-            _errorMessage = error.toString();
-            notifyListeners();
-          },
-        );
+    watch(
+      'stream1',
+      _repository
+          .getAllMonthlyExpensesStream(userId)
+          .listen(
+            (expenses) {
+              _allMonthlyExpenses = expenses;
+              notifyListeners();
+            },
+            onError: (error) {
+              _errorMessage = error.toString();
+              notifyListeners();
+            },
+          ),
+    );
   }
 
   // Clear category expenses

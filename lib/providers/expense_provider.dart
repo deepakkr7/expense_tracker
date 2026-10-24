@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
+import 'session_notifier.dart';
 import '../data/models/expense_model.dart';
 import '../data/repositories/expense_repository.dart';
 
-class ExpenseProvider with ChangeNotifier {
+class ExpenseProvider extends SessionNotifier {
   final ExpenseRepository _expenseRepository = ExpenseRepository();
 
   List<ExpenseModel> _expenses = []; // Stores monthly expenses
@@ -78,49 +78,55 @@ class ExpenseProvider with ChangeNotifier {
 
   // Load user expenses (subscribe to stream)
   void loadUserExpenses(String userId) {
-    _expenseRepository
-        .getUserExpensesStream(userId)
-        .listen(
-          (expenses) {
-            _allExpenses = expenses;
-            notifyListeners();
-          },
-          onError: (error) {
-            _errorMessage = error.toString();
-            notifyListeners();
-          },
-        );
+    watch(
+      'stream0',
+      _expenseRepository
+          .getUserExpensesStream(userId)
+          .listen(
+            (expenses) {
+              _allExpenses = expenses;
+              notifyListeners();
+            },
+            onError: (error) {
+              _errorMessage = error.toString();
+              notifyListeners();
+            },
+          ),
+    );
   }
 
   // Load monthly expenses
   void loadMonthlyExpenses(String userId, DateTime month) {
-    _expenseRepository
-        .getMonthlyExpensesStream(userId, month)
-        .listen(
-          (expenses) {
-            _expenses = expenses;
+    watch(
+      'stream1',
+      _expenseRepository
+          .getMonthlyExpensesStream(userId, month)
+          .listen(
+            (expenses) {
+              _expenses = expenses;
 
-            // Calculate category totals
-            _categoryTotals = {};
-            for (var expense in expenses) {
-              if (expense.isIncome) continue; // Skip income
-              _categoryTotals[expense.category] =
-                  (_categoryTotals[expense.category] ?? 0) + expense.amount;
-            }
+              // Calculate category totals
+              _categoryTotals = {};
+              for (var expense in expenses) {
+                if (expense.isIncome) continue; // Skip income
+                _categoryTotals[expense.category] =
+                    (_categoryTotals[expense.category] ?? 0) + expense.amount;
+              }
 
-            // Calculate monthly total
-            _monthlyTotal = expenses.fold(
-              0.0,
-              (sum, expense) => expense.isIncome ? sum : sum + expense.amount,
-            );
+              // Calculate monthly total
+              _monthlyTotal = expenses.fold(
+                0.0,
+                (sum, expense) => expense.isIncome ? sum : sum + expense.amount,
+              );
 
-            notifyListeners();
-          },
-          onError: (error) {
-            _errorMessage = error.toString();
-            notifyListeners();
-          },
-        );
+              notifyListeners();
+            },
+            onError: (error) {
+              _errorMessage = error.toString();
+              notifyListeners();
+            },
+          ),
+    );
   }
 
   // Load category totals for current month
@@ -143,18 +149,21 @@ class ExpenseProvider with ChangeNotifier {
 
   // Get expenses for a specific category
   void loadExpensesByCategory(String userId, String category) {
-    _expenseRepository
-        .getExpensesByCategoryStream(userId, category)
-        .listen(
-          (expenses) {
-            _expenses = expenses;
-            notifyListeners();
-          },
-          onError: (error) {
-            _errorMessage = error.toString();
-            notifyListeners();
-          },
-        );
+    watch(
+      'stream2',
+      _expenseRepository
+          .getExpensesByCategoryStream(userId, category)
+          .listen(
+            (expenses) {
+              _expenses = expenses;
+              notifyListeners();
+            },
+            onError: (error) {
+              _errorMessage = error.toString();
+              notifyListeners();
+            },
+          ),
+    );
   }
 
   // Clear error message

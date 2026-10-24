@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
+import 'session_notifier.dart';
 import '../data/models/budget_model.dart';
 import '../data/repositories/budget_repository.dart';
 import '../core/services/deepseek_service.dart';
 import '../core/constants/app_constants.dart';
 
-class BudgetProvider with ChangeNotifier {
+class BudgetProvider extends SessionNotifier {
   final BudgetRepository _budgetRepository = BudgetRepository();
 
   BudgetModel? _currentBudget;
@@ -57,18 +57,21 @@ class BudgetProvider with ChangeNotifier {
 
   // Subscribe to budget stream
   void subscribeToBudget(String userId, DateTime month) {
-    _budgetRepository
-        .getBudgetStream(userId, month)
-        .listen(
-          (budget) {
-            _currentBudget = budget;
-            notifyListeners();
-          },
-          onError: (error) {
-            _errorMessage = error.toString();
-            notifyListeners();
-          },
-        );
+    watch(
+      'stream0',
+      _budgetRepository
+          .getBudgetStream(userId, month)
+          .listen(
+            (budget) {
+              _currentBudget = budget;
+              notifyListeners();
+            },
+            onError: (error) {
+              _errorMessage = error.toString();
+              notifyListeners();
+            },
+          ),
+    );
   }
 
   // Get budget for specific month (direct call, not stream)
@@ -123,34 +126,38 @@ class BudgetProvider with ChangeNotifier {
         debtStrategy: debtStrategy,
       );
     } catch (e) {
-      print('AI generation failed, falling back to static logic: $e');
-      
       double availableForExpenses = availableLimit;
-      
+      _errorMessage =
+          'AI is unavailable or disabled. Showing a rule-based budget suggestion.';
+
       // Deduct bills
       upcomingBillsByCategory.forEach((category, amount) {
         availableForExpenses -= amount;
       });
-      
+
       if (unpaidDebt > 0) {
         availableForExpenses -= unpaidDebt;
       }
 
       _suggestedBudget = _budgetRepository.generateSuggestedBudget(
         availableForExpenses < 0 ? 0 : availableForExpenses,
-        0, 
+        0,
       );
-      
+
       if (unpaidDebt > 0) {
         if (debtStrategy == 'aggressive') {
           _suggestedBudget['Debt Repayment'] = unpaidDebt; // Borrowed money
         } else if (debtStrategy == 'balanced') {
-          _suggestedBudget['Debt Repayment'] = unpaidDebt > 0 ? (unpaidDebt * 0.5) : 0;
+          _suggestedBudget['Debt Repayment'] = unpaidDebt > 0
+              ? (unpaidDebt * 0.5)
+              : 0;
         } else {
-          _suggestedBudget['Debt Repayment'] = unpaidDebt > 0 ? (unpaidDebt * 0.1) : 0;
+          _suggestedBudget['Debt Repayment'] = unpaidDebt > 0
+              ? (unpaidDebt * 0.1)
+              : 0;
         }
       }
-      
+
       // Assign explicitly categorized bills
       upcomingBillsByCategory.forEach((category, amount) {
         _suggestedBudget[category] = amount;

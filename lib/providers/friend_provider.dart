@@ -1,9 +1,9 @@
-import 'package:flutter/foundation.dart';
+import 'session_notifier.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import '../data/models/friend_model.dart';
 import '../data/repositories/friend_repository.dart';
 
-class FriendProvider with ChangeNotifier {
+class FriendProvider extends SessionNotifier {
   final FriendRepository _friendRepository = FriendRepository();
 
   List<FriendModel> _friends = [];
@@ -63,40 +63,35 @@ class FriendProvider with ChangeNotifier {
 
   // Load friends (subscribe to stream)
   void loadFriends(String userId) {
-    _friendRepository
-        .getFriendsStream(userId)
-        .listen(
-          (friends) {
-            _friends = friends;
-            notifyListeners();
-          },
-          onError: (error) {
-            _errorMessage = error.toString();
-            notifyListeners();
-          },
-        );
+    watch(
+      'stream0',
+      _friendRepository
+          .getFriendsStream(userId)
+          .listen(
+            (friends) {
+              _friends = friends;
+              notifyListeners();
+            },
+            onError: (error) {
+              _errorMessage = error.toString();
+              notifyListeners();
+            },
+          ),
+    );
   }
 
   // Import contacts from phone
   Future<List<Contact>> importContacts() async {
     try {
-      print('📱 Requesting contacts permission...');
-
       // Request permission (will show dialog if not granted)
       await FlutterContacts.requestPermission();
-
-      print('📖 Attempting to fetch contacts...');
 
       // Try to get contacts - if permission is granted, this will work
       // If not granted, it will throw an error
       final contacts = await FlutterContacts.getContacts(withProperties: true);
 
-      print('✅ Retrieved ${contacts.length} contacts');
-
       return contacts;
     } catch (e) {
-      print('💥 Error in importContacts: $e');
-
       // Check if it's a permission error
       if (e.toString().contains('permission') ||
           e.toString().contains('denied') ||

@@ -1,6 +1,8 @@
-import 'package:expense_tracker/firebase_options.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart'
+    show LicenseRegistry, LicenseEntryWithLineBreaks;
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'core/services/notification_service.dart';
@@ -8,8 +10,6 @@ import 'core/theme/app_theme.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'core/services/location_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/expense_provider.dart';
 import 'providers/budget_provider.dart';
@@ -30,42 +30,62 @@ import 'data/models/user_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks([
+      'Inter',
+    ], await rootBundle.loadString('assets/fonts/OFL.txt'));
+  });
 
   // Initialize Firebase
   // NOTE: You need to add firebase_options.dart file with your Firebase configuration
   // Run: flutterfire configure
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
+    // Android uses the configuration generated from google-services.json.
+    await Firebase.initializeApp();
+  } catch (_) {
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Unable to start SpendWise. Please try again.'),
+                TextButton(onPressed: main, child: const Text('Retry')),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
-  } catch (e) {
-    print('Firebase initialization error: $e');
-    print('Please run: flutterfire configure');
+    return;
   }
 
   // Initialize notifications
-  await NotificationService().init();
   tz_data.initializeTimeZones();
 
   try {
     final timeZoneName = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(timeZoneName.toString()));
-  } catch (e) {
-    print('Failed to setup local timezone: $e');
+    tz.setLocalLocation(tz.getLocation(timeZoneName.identifier));
+  } catch (_) {
+    // Use the device offset if its IANA identifier cannot be resolved.
+    final offset = DateTime.now().timeZoneOffset.inMilliseconds;
+    tz.setLocalLocation(
+      tz.Location('device', [0], [0], [
+        tz.TimeZone(offset, isDst: false, abbreviation: 'local'),
+      ]),
+    );
   }
 
-  // Explicitly request permissions on startup for Android 13+ and iOS
-  await Permission.notification.request();
-  await Permission.locationWhenInUse.request();
-
-  // Schedule daily 10 PM reminder
-  await NotificationService().scheduleDailyTenPMReminder();
-
-  // Initialize Background Location tracker
-  await LocationService().init();
-
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
+  try {
+    await NotificationService().init();
+    if (await NotificationService().dailyEnabled()) {
+      await NotificationService().scheduleDailyTenPMReminder();
+    }
+  } catch (_) {
+    // Optional reminders must not prevent manual expense tracking.
+  }
 
   runApp(const MyApp());
 }
@@ -78,33 +98,40 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ExpenseProvider()),
-        ChangeNotifierProvider(create: (_) => BudgetProvider()),
-        ChangeNotifierProvider(create: (_) => FriendProvider()),
-        ChangeNotifierProvider(create: (_) => MonthlyExpenseProvider()),
-        ChangeNotifierProvider(create: (_) => BorrowedMoneyProvider()),
-        ChangeNotifierProvider(create: (_) => BillReminderProvider()),
-        ChangeNotifierProvider(create: (_) => SavingsGoalProvider()),
-        ChangeNotifierProvider(create: (_) => GroupProvider()),
-        ChangeNotifierProvider(create: (_) => SplitExpenseProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return MaterialApp(
-            title: 'SpendWise',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeProvider.themeMode,
-            home: const SplashScreen(),
-            routes: {
-              '/login': (context) => const LoginScreen(),
-              '/home': (context) => const MainNavigationScreen(),
-              '/profile': (context) => const ProfileScreen(),
+      child: Consumer<AuthProvider>(
+        builder: (context, auth, _) => MultiProvider(
+          key: ValueKey(auth.currentUser?.id ?? 'signed-out'),
+          providers: [
+            ChangeNotifierProvider(create: (_) => ExpenseProvider()),
+            ChangeNotifierProvider(create: (_) => BudgetProvider()),
+            ChangeNotifierProvider(create: (_) => FriendProvider()),
+            ChangeNotifierProvider(create: (_) => MonthlyExpenseProvider()),
+            ChangeNotifierProvider(create: (_) => BorrowedMoneyProvider()),
+            ChangeNotifierProvider(create: (_) => BillReminderProvider()),
+            ChangeNotifierProvider(create: (_) => SavingsGoalProvider()),
+            ChangeNotifierProvider(create: (_) => GroupProvider()),
+            ChangeNotifierProvider(create: (_) => SplitExpenseProvider()),
+          ],
+          child: Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return MaterialApp(
+                title: 'SpendWise',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: themeProvider.themeMode,
+                home: const SplashScreen(),
+                routes: {
+                  '/login': (context) => const LoginScreen(),
+                  '/home': (context) => const MainNavigationScreen(),
+                  '/profile': (context) => const ProfileScreen(),
+                },
+              );
             },
-          );
-        },
+          ),
+        ),
       ),
     );
   }
@@ -113,18 +140,8 @@ class MyApp extends StatelessWidget {
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
-  bool _needsMonthlyIncome(UserModel user) {
-    // Check if user needs to set monthly income
-    if (user.lastIncomeSetMonth == null) {
-      return true; // Never set income before
-    }
-
-    final now = DateTime.now();
-    final lastSet = user.lastIncomeSetMonth!;
-
-    // Check if it's a new month
-    return now.year != lastSet.year || now.month != lastSet.month;
-  }
+  bool _needsMonthlyIncome(UserModel user) =>
+      !user.incomeSetupCompleted && user.lastIncomeSetMonth == null;
 
   @override
   Widget build(BuildContext context) {

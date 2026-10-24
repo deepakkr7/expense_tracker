@@ -1,3 +1,4 @@
+import '../../widgets/privacy_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
@@ -61,11 +62,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+        decoration: BoxDecoration(gradient: AppTheme.primaryGradient),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               child: Column(
                 children: [
                   // Back Button
@@ -73,21 +74,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     alignment: Alignment.topLeft,
                     child: IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      icon: Icon(Icons.arrow_back, color: Colors.white),
                     ),
                   ),
 
                   // Registration Form Card
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.1),
                           blurRadius: 20,
-                          offset: const Offset(0, 10),
+                          offset: Offset(0, 10),
                         ),
                       ],
                     ),
@@ -101,36 +102,36 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             style: Theme.of(context).textTheme.displaySmall,
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'Start managing your expenses',
                             style: Theme.of(context).textTheme.bodyMedium,
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 32),
+                          SizedBox(height: 32),
 
                           // Name Field
                           TextFormField(
                             controller: _nameController,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Full Name',
                               prefixIcon: Icon(Icons.person_outline),
                             ),
                             validator: Validators.validateName,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
 
                           // Email Field
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Email',
                               prefixIcon: Icon(Icons.email_outlined),
                             ),
                             validator: Validators.validateEmail,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
 
                           // Password Field
                           TextFormField(
@@ -138,7 +139,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
                               labelText: 'Password',
-                              prefixIcon: const Icon(Icons.lock_outline),
+                              prefixIcon: Icon(Icons.lock_outline),
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword
@@ -154,7 +155,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             ),
                             validator: Validators.validatePassword,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
 
                           // Confirm Password Field
                           TextFormField(
@@ -162,7 +163,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             obscureText: _obscureConfirmPassword,
                             decoration: InputDecoration(
                               labelText: 'Confirm Password',
-                              prefixIcon: const Icon(Icons.lock_outline),
+                              prefixIcon: Icon(Icons.lock_outline),
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscureConfirmPassword
@@ -183,7 +184,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                   _passwordController.text,
                                 ),
                           ),
-                          const SizedBox(height: 32),
+                          SizedBox(height: 32),
 
                           // Register Button
                           SizedBox(
@@ -194,7 +195,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                   ? null
                                   : _handleRegister,
                               child: authProvider.status == AuthStatus.loading
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       height: 24,
                                       width: 24,
                                       child: CircularProgressIndicator(
@@ -202,22 +203,27 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const Text('Create Account'),
+                                  : Text('Create Account'),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
 
+                          PrivacyNotice(),
                           // Login Link
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
                                 'Already have an account? ',
-                                style: TextStyle(color: Colors.grey[600]),
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
-                                child: const Text('Login'),
+                                child: Text('Login'),
                               ),
                             ],
                           ),

@@ -10,6 +10,7 @@ class UserModel extends Equatable {
   final Map<String, double> budgetLimits;
   final DateTime? lastIncomeSetMonth;
   final DateTime? lastMonthReviewCompleted;
+  final bool incomeSetupCompleted;
   final DateTime createdAt;
 
   const UserModel({
@@ -22,6 +23,7 @@ class UserModel extends Equatable {
     this.budgetLimits = const {},
     this.lastIncomeSetMonth,
     this.lastMonthReviewCompleted,
+    this.incomeSetupCompleted = false,
     required this.createdAt,
   });
 
@@ -36,6 +38,7 @@ class UserModel extends Equatable {
       'budgetLimits': budgetLimits,
       'lastIncomeSetMonth': lastIncomeSetMonth?.toIso8601String(),
       'lastMonthReviewCompleted': lastMonthReviewCompleted?.toIso8601String(),
+      'incomeSetupCompleted': incomeSetupCompleted,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -55,6 +58,9 @@ class UserModel extends Equatable {
       lastMonthReviewCompleted: map['lastMonthReviewCompleted'] != null
           ? DateTime.parse(map['lastMonthReviewCompleted'])
           : null,
+      incomeSetupCompleted:
+          map['incomeSetupCompleted'] as bool? ??
+          (map['lastIncomeSetMonth'] != null),
       createdAt: DateTime.parse(map['createdAt']),
     );
   }
@@ -69,6 +75,7 @@ class UserModel extends Equatable {
     Map<String, double>? budgetLimits,
     DateTime? lastIncomeSetMonth,
     DateTime? lastMonthReviewCompleted,
+    bool? incomeSetupCompleted,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -82,6 +89,7 @@ class UserModel extends Equatable {
       lastIncomeSetMonth: lastIncomeSetMonth ?? this.lastIncomeSetMonth,
       lastMonthReviewCompleted:
           lastMonthReviewCompleted ?? this.lastMonthReviewCompleted,
+      incomeSetupCompleted: incomeSetupCompleted ?? this.incomeSetupCompleted,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -97,6 +105,7 @@ class UserModel extends Equatable {
     budgetLimits,
     lastIncomeSetMonth,
     lastMonthReviewCompleted,
+    incomeSetupCompleted,
     createdAt,
   ];
 }

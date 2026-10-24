@@ -28,25 +28,25 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Scale Animation Controller
     _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: Duration(milliseconds: 1200),
       vsync: this,
     );
 
     // Fade Animation Controller
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: Duration(milliseconds: 800),
       vsync: this,
     );
 
     // Slide Animation Controller
     _slideController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: Duration(milliseconds: 1000),
       vsync: this,
     );
 
     // Rotate Animation Controller
     _rotateController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: Duration(milliseconds: 1500),
       vsync: this,
     );
 
@@ -61,7 +61,7 @@ class _SplashScreenState extends State<SplashScreen>
     ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.5),
+      begin: Offset(0, 0.5),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
 
@@ -73,25 +73,25 @@ class _SplashScreenState extends State<SplashScreen>
     _startAnimations();
 
     // Navigate after delay
-    Timer(const Duration(seconds: 3), () {
+    Timer(Duration(seconds: 3), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const AuthWrapper()),
+          MaterialPageRoute(builder: (context) => AuthWrapper()),
         );
       }
     });
   }
 
   void _startAnimations() async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(Duration(milliseconds: 300));
     _scaleController.forward();
     _rotateController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 400));
+    await Future.delayed(Duration(milliseconds: 400));
     _fadeController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 200));
+    await Future.delayed(Duration(milliseconds: 200));
     _slideController.forward();
   }
 
@@ -155,7 +155,7 @@ class _SplashScreenState extends State<SplashScreen>
                         width: 120,
                         height: 120,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
@@ -165,7 +165,7 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.account_balance_wallet,
                           size: 60,
                           color: AppTheme.primaryColor,
@@ -174,7 +174,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
 
                   // App name with fade and slide animation
                   FadeTransition(
@@ -183,7 +183,7 @@ class _SplashScreenState extends State<SplashScreen>
                       position: _slideAnimation,
                       child: Column(
                         children: [
-                          const Text(
+                          Text(
                             'SpendWise',
                             style: TextStyle(
                               fontSize: 36,
@@ -192,7 +192,7 @@ class _SplashScreenState extends State<SplashScreen>
                               letterSpacing: 1.5,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'Track. Save. Achieve.',
                             style: TextStyle(
@@ -207,7 +207,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 80),
+                  SizedBox(height: 80),
 
                   // Loading indicator
                   FadeTransition(

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
+import '../../core/services/notification_service.dart';
 
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -13,6 +14,14 @@ class AuthRepository {
 
   // Auth state changes stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  Future<void> resetPassword(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+    } on FirebaseAuthException catch (e) {
+      if (e.code != 'user-not-found') rethrow;
+    }
+  }
 
   // Register with email and password
   Future<UserModel?> registerWithEmail({
@@ -134,14 +143,21 @@ class AuthRepository {
       }
       return null;
     } on FirebaseAuthException catch (e) {
-      print('$e');
       throw _handleAuthException(e);
     }
   }
 
   // Logout
   Future<void> logout() async {
-    await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
+    await _auth.signOut();
+    try {
+      await NotificationService().cancelAll();
+    } catch (_) {
+      // Signing out must still succeed if the notification plugin is unavailable.
+    }
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
   }
 
   // Get user data from Firestore
