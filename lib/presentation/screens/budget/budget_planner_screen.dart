@@ -61,7 +61,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
 
     if (user == null || user.savingsGoal <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Please set your Monthly Limit in Profile first'),
         ),
       );
@@ -94,22 +94,27 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
     Map<String, double> categoryBills = {};
     for (var bill in billProvider.bills) {
       if (!bill.isPaid) {
-        if (bill.dueDate.month == _selectedMonth.month && bill.dueDate.year == _selectedMonth.year) {
-          categoryBills[bill.category] = (categoryBills[bill.category] ?? 0.0) + bill.amount;
+        if (bill.dueDate.month == _selectedMonth.month &&
+            bill.dueDate.year == _selectedMonth.year) {
+          categoryBills[bill.category] =
+              (categoryBills[bill.category] ?? 0.0) + bill.amount;
         } else if (bill.recurrenceType == RecurrenceType.monthly &&
-            (bill.dueDate.isBefore(_selectedMonth) || (bill.dueDate.year == _selectedMonth.year && bill.dueDate.month < _selectedMonth.month))) {
+            (bill.dueDate.isBefore(_selectedMonth) ||
+                (bill.dueDate.year == _selectedMonth.year &&
+                    bill.dueDate.month < _selectedMonth.month))) {
           // Project recurring monthly bills that started before the selected month
-          categoryBills[bill.category] = (categoryBills[bill.category] ?? 0.0) + bill.amount;
+          categoryBills[bill.category] =
+              (categoryBills[bill.category] ?? 0.0) + bill.amount;
         }
       }
     }
 
     final budgetProvider = context.read<BudgetProvider>();
-    
+
     try {
       await budgetProvider.generateSuggestionsWithDebt(
         income,
-        limit, 
+        limit,
         _totalUnpaidDebt,
         categoryBills,
         debtStrategy,
@@ -126,6 +131,11 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
             _categoryControllers[category]?.text = amount.toStringAsFixed(0);
           });
         });
+        if (budgetProvider.errorMessage != null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(budgetProvider.errorMessage!)));
+        }
       }
     } finally {
       if (mounted) {
@@ -141,34 +151,41 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Debt Repayment Strategy'),
+          title: Text('Debt Repayment Strategy'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('You have ₹${totalDebt.toStringAsFixed(0)} in Unpaid Debt. How would you like the AI to handle this?'),
-              const SizedBox(height: 16),
+              Text(
+                'You have ₹${totalDebt.toStringAsFixed(0)} in Unpaid Debt. How would you like the AI to handle this?',
+              ),
+              SizedBox(height: 16),
               ListTile(
-                title: const Text('Aggressive'),
-                subtitle: Text('Pay it off in full (₹${totalDebt.toStringAsFixed(0)})'),
+                title: Text('Aggressive'),
+                subtitle: Text(
+                  'Pay it off in full (₹${totalDebt.toStringAsFixed(0)})',
+                ),
                 onTap: () => Navigator.pop(context, 'aggressive'),
-                leading: const Icon(Icons.flash_on, color: AppTheme.warningColor),
+                leading: Icon(Icons.flash_on, color: AppTheme.warningColor),
               ),
               ListTile(
-                title: const Text('Balanced'),
-                subtitle: const Text('Let AI suggest a reasonable partial amount'),
+                title: Text('Balanced'),
+                subtitle: Text('Let AI suggest a reasonable partial amount'),
                 onTap: () => Navigator.pop(context, 'balanced'),
-                leading: const Icon(Icons.balance, color: AppTheme.primaryColor),
+                leading: Icon(Icons.balance, color: AppTheme.primaryColor),
               ),
               ListTile(
-                title: const Text('Minimum'),
-                subtitle: const Text('Pay minimum possible this month'),
+                title: Text('Minimum'),
+                subtitle: Text('Pay minimum possible this month'),
                 onTap: () => Navigator.pop(context, 'minimum'),
-                leading: const Icon(Icons.arrow_downward, color: AppTheme.successColor),
+                leading: Icon(
+                  Icons.arrow_downward,
+                  color: AppTheme.successColor,
+                ),
               ),
             ],
           ),
         );
-      }
+      },
     );
   }
 
@@ -199,9 +216,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
 
     if (user == null || user.savingsGoal <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please set your Monthly Limit in Profile'),
-        ),
+        SnackBar(content: Text('Please set your Monthly Limit in Profile')),
       );
       return;
     }
@@ -236,11 +251,17 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                 color: AppTheme.warningColor,
                 size: 28,
               ),
-              const SizedBox(width: 12),
-              const Expanded(
+              SizedBox(width: 12),
+              Expanded(
                 child: Text(
                   'Budget Exceeds Limit!',
-                  style: TextStyle(color: AppTheme.warningColor, fontSize: 18),
+                  style: TextStyle(
+                    color: AppTheme.readableColor(
+                      context,
+                      AppTheme.warningColor,
+                    ),
+                    fontSize: 18,
+                  ),
                 ),
               ),
             ],
@@ -252,8 +273,8 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
               Text(
                 'Your total budget (₹${totalBudget.toStringAsFixed(0)}) exceeds your monthly limit (₹${limit.toStringAsFixed(0)}) by ₹${excess.toStringAsFixed(0)}.',
               ),
-              const SizedBox(height: 16),
-              const Text(
+              SizedBox(height: 16),
+              Text(
                 'Do you want to adjust your numbers or proceed anyway?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
@@ -262,14 +283,14 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Save Anyway'),
+              child: Text('Save Anyway'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               style: TextButton.styleFrom(
                 foregroundColor: AppTheme.primaryColor,
               ),
-              child: const Text('Go Back & Fix'),
+              child: Text('Go Back & Fix'),
             ),
           ],
         ),
@@ -305,21 +326,21 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
       final shouldReplace = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Replace Existing Budget?'),
+          title: Text('Replace Existing Budget?'),
           content: Text(
             'You already have a budget plan for ${DateFormat('MMMM yyyy').format(targetMonth)}. Do you want to replace it?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text('Cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: TextButton.styleFrom(
                 foregroundColor: AppTheme.primaryColor,
               ),
-              child: const Text('Replace'),
+              child: Text('Replace'),
             ),
           ],
         ),
@@ -335,7 +356,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
     }
 
     // Use existing budget ID if replacing, otherwise create new
-    final budgetId = existingBudget?.id ?? const Uuid().v4();
+    final budgetId = existingBudget?.id ?? Uuid().v4();
 
     final budget = BudgetModel(
       id: budgetId,
@@ -350,7 +371,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
       await budgetProvider.saveBudget(budget);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Budget saved successfully!'),
             backgroundColor: AppTheme.successColor,
           ),
@@ -400,7 +421,9 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
         builder: (ctx) => AlertDialog(
           title: Text(
             '${DateFormat('MMMM yyyy').format(targetMonth)} Budget',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -409,22 +432,22 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
               children: [
                 _buildBudgetInfoRow('Monthly Income', budget.monthlyIncome),
                 _buildBudgetInfoRow('Savings Goal', budget.savingsGoal),
-                const Divider(height: 24),
-                const Text(
+                Divider(height: 24),
+                Text(
                   'Category Budgets',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 ...budget.categoryBudgets.entries.map((entry) {
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: EdgeInsets.only(bottom: 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(entry.key),
                         Text(
                           '₹${entry.value.toStringAsFixed(0)}',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -436,7 +459,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
+              child: Text('Close'),
             ),
           ],
         ),
@@ -446,14 +469,14 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
 
   Widget _buildBudgetInfoRow(String label, double value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(label, style: TextStyle(fontWeight: FontWeight.w500)),
           Text(
             '₹${value.toStringAsFixed(0)}',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
         ],
       ),
@@ -464,21 +487,25 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
   Widget build(BuildContext context) {
     final monthName = DateFormat('MMMM').format(_selectedMonth);
     final currentMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
-    final nextMonth = DateTime(DateTime.now().year, DateTime.now().month + 1, 1);
+    final nextMonth = DateTime(
+      DateTime.now().year,
+      DateTime.now().month + 1,
+      1,
+    );
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Budget Planner'),
+        title: Text('Budget Planner'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.visibility),
+            icon: Icon(Icons.visibility),
             onPressed: _viewCurrentBudget,
             tooltip: 'View Selected Month Budget',
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -487,7 +514,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ChoiceChip(
-                  label: const Text('Current Month'),
+                  label: Text('Current Month'),
                   selected: _selectedMonth == currentMonth,
                   onSelected: (selected) {
                     if (selected) {
@@ -498,9 +525,9 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                     }
                   },
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 ChoiceChip(
-                  label: const Text('Next Month'),
+                  label: Text('Next Month'),
                   selected: _selectedMonth == nextMonth,
                   onSelected: (selected) {
                     if (selected) {
@@ -513,24 +540,27 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // Info banner
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppTheme.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: AppTheme.primaryColor),
-                  const SizedBox(width: 12),
+                  Icon(Icons.info_outline, color: AppTheme.primaryColor),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Create your $monthName budget plan',
-                      style: const TextStyle(
-                        color: AppTheme.primaryColor,
+                      style: TextStyle(
+                        color: AppTheme.readableColor(
+                          context,
+                          AppTheme.primaryColor,
+                        ),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -538,14 +568,14 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             Text(
               'Your Monthly Limit: ₹${context.read<AuthProvider>().currentUser?.savingsGoal.toStringAsFixed(0) ?? 0}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Generate button
             SizedBox(
@@ -553,7 +583,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
               child: ElevatedButton.icon(
                 onPressed: _isGenerating ? null : _generateSuggestions,
                 icon: _isGenerating
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
@@ -561,10 +591,12 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                           strokeWidth: 2,
                         ),
                       )
-                    : const Icon(Icons.auto_awesome, color: Colors.white),
+                    : Icon(Icons.auto_awesome, color: Colors.white),
                 label: Text(
-                  _isGenerating ? 'AI is thinking...' : 'Generate AI Budget Plan',
-                  style: const TextStyle(fontSize: 16, color: Colors.white),
+                  _isGenerating
+                      ? 'AI is thinking...'
+                      : 'Generate AI Budget Plan',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
@@ -574,7 +606,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
 
             // Suggested budget
             if (_showSuggestions) ...[
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -590,7 +622,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
 
               ..._suggestedBudget.entries.map((entry) {
                 final icon =
@@ -599,10 +631,10 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                     AppConstants.categoryColors[entry.key] ?? Colors.grey;
 
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin: EdgeInsets.only(bottom: 12),
                   child: ListTile(
                     leading: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
@@ -616,11 +648,11 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                             child: TextField(
                               controller: _categoryControllers[entry.key],
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 prefixText: '₹ ',
                                 isDense: true,
                               ),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
@@ -628,7 +660,7 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                           )
                         : Text(
                             '₹${entry.value.toStringAsFixed(0)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
@@ -636,15 +668,15 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                   ),
                 );
               }),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Save button
               SizedBox(
                 height: 56,
                 child: ElevatedButton.icon(
                   onPressed: _saveBudget,
-                  icon: const Icon(Icons.save, color: Colors.white),
-                  label: const Text(
+                  icon: Icon(Icons.save, color: Colors.white),
+                  label: Text(
                     'Save Budget',
                     style: TextStyle(
                       fontSize: 16,

@@ -1,3 +1,4 @@
+import '../../../core/utils/money.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -17,13 +18,26 @@ import 'receipt_scan_button.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   final bool isBottomSheet;
-  const AddExpenseScreen({super.key, this.isBottomSheet = false});
+  final bool isIncome;
+  final bool scanReceipt;
+  final double? initialAmount;
+  final String? initialDescription;
+  const AddExpenseScreen({
+    super.key,
+    this.isBottomSheet = false,
+    this.isIncome = false,
+    this.scanReceipt = false,
+    this.initialAmount,
+    this.initialDescription,
+  });
 
   @override
   State<AddExpenseScreen> createState() => _AddExpenseScreenState();
 }
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
+  final _draftId = const Uuid().v4();
+  bool _saving = false;
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -37,6 +51,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialAmount != null)
+      _amountController.text = widget.initialAmount!.toStringAsFixed(2);
+    _descriptionController.text = widget.initialDescription ?? '';
+    if (widget.scanReceipt)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted)
+          ReceiptScanButton(
+            onDataExtracted: _handleOCRData,
+          ).scanReceipt(context);
+      });
     // Load friends list
     final authProvider = context.read<AuthProvider>();
     if (authProvider.currentUser != null) {
@@ -77,7 +101,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text('Receipt data extracted! Please review and save.'),
         backgroundColor: Colors.green,
         duration: Duration(seconds: 2),
@@ -89,13 +113,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     final description = _descriptionController.text.trim();
     if (description.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a description first')),
+        SnackBar(content: Text('Please enter a description first')),
       );
       return;
     }
 
     setState(() => _isAutoCategorizing = true);
-    
+
     try {
       final deepSeekService = DeepSeekService();
       final category = await deepSeekService.categorizeExpense(
@@ -111,19 +135,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           SnackBar(
             content: Text('Auto-categorized as $category!'),
             backgroundColor: AppTheme.successColor,
-            duration: const Duration(seconds: 2),
+            duration: Duration(seconds: 2),
           ),
         );
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not determine category')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not determine category')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Auto-categorize failed')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Auto-categorize failed')));
       }
     } finally {
       if (mounted) {
@@ -150,31 +174,29 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             height: MediaQuery.of(context).size.height * 0.7,
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
               children: [
                 // Handle
                 Container(
-                  margin: const EdgeInsets.only(top: 12),
+                  margin: EdgeInsets.only(top: 12),
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey[400],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // Title
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: EdgeInsets.symmetric(horizontal: 24),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Select Friends',
                         style: TextStyle(
                           fontSize: 20,
@@ -188,7 +210,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           });
                           Navigator.pop(context);
                         },
-                        child: const Text('Done'),
+                        child: Text('Done'),
                       ),
                     ],
                   ),
@@ -197,10 +219,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 // Import button
                 if (contacts.isEmpty && !isImportingContacts)
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 8,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     child: ElevatedButton.icon(
                       onPressed: () async {
                         setModalState(() => isImportingContacts = true);
@@ -220,23 +239,21 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           }
                         }
                       },
-                      icon: const Icon(Icons.contact_phone),
-                      label: const Text('Import from Contacts'),
+                      icon: Icon(Icons.contact_phone),
+                      label: Text('Import from Contacts'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryColor,
                         foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 48),
+                        minimumSize: Size(double.infinity, 48),
                       ),
                     ),
                   ),
 
-                const Divider(),
+                Divider(),
 
                 // Contact/Friend list
                 if (isImportingContacts)
-                  const Expanded(
-                    child: Center(child: CircularProgressIndicator()),
-                  )
+                  Expanded(child: Center(child: CircularProgressIndicator()))
                 else if (contacts.isEmpty)
                   Expanded(
                     child: Center(
@@ -246,12 +263,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           Icon(
                             Icons.people_outline,
                             size: 64,
-                            color: Colors.grey[400],
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text(
                             'Import contacts to split expenses',
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
@@ -260,7 +283,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 else
                   Expanded(
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: EdgeInsets.symmetric(horizontal: 24),
                       itemCount: contacts.length,
                       itemBuilder: (context, index) {
                         final contact = contacts[index];
@@ -318,9 +341,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   Future<void> _handleSave() async {
+    if (_saving) return;
     if (!_formKey.currentState!.validate() || _selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields')),
+        SnackBar(content: Text('Please fill all required fields')),
       );
       return;
     }
@@ -328,7 +352,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     // If split is enabled but no friends selected
     if (_isSplitExpense && _selectedFriends.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select friends to split with')),
+        SnackBar(content: Text('Please select friends to split with')),
       );
       return;
     }
@@ -337,7 +361,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     final budgetProvider = context.read<BudgetProvider>();
     final amount = double.parse(_amountController.text);
 
-    if (budgetProvider.isZeroBudgetCategory(_selectedCategory!)) {
+    if (!widget.isIncome &&
+        budgetProvider.isZeroBudgetCategory(_selectedCategory!)) {
       // Show warning dialog
       final shouldContinue = await showDialog<bool>(
         context: context,
@@ -355,16 +380,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
 
     // Check if widget is still mounted before proceeding
-    if (!mounted) return;
+    if (!mounted || _saving) return;
 
+    setState(() => _saving = true);
     try {
       final authProvider = context.read<AuthProvider>();
       final expenseProvider = context.read<ExpenseProvider>();
 
       final expense = ExpenseModel(
-        id: const Uuid().v4(),
+        id: _draftId,
         userId: authProvider.currentUser!.id,
         amount: amount,
+        isIncome: widget.isIncome,
         category: _selectedCategory!,
         description: _descriptionController.text,
         date: _selectedDate,
@@ -372,7 +399,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         splitDetails: _isSplitExpense && _selectedFriends.isNotEmpty
             ? {
                 'friendIds': _selectedFriends.map((f) => f.friendId).toList(),
-                'splitAmount': amount / (_selectedFriends.length + 1),
+                'splitAmount': Money.split(
+                  amount,
+                  _selectedFriends.length + 1,
+                ).last,
+                'shares': Money.split(amount, _selectedFriends.length + 1),
               }
             : null,
         ocrData: _ocrData, // Include OCR data if receipt was scanned
@@ -383,9 +414,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       final limit = authProvider.currentUser?.savingsGoal ?? 0.0;
 
       await expenseProvider.addExpense(expense);
+      if (widget.isIncome) await authProvider.refreshUser();
 
       // Notification check
-      if (authProvider.currentUser != null && limit > 0) {
+      if (!widget.isIncome && authProvider.currentUser != null && limit > 0) {
         final newTotal = currentTotal + amount;
         if (newTotal > limit && currentTotal <= limit) {
           NotificationService().showLimitExceededNotification(limit, newTotal);
@@ -397,13 +429,23 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Expense added successfully')),
+          SnackBar(
+            content: Text(
+              widget.isIncome
+                  ? 'Income added successfully'
+                  : 'Expense added successfully',
+            ),
+          ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save. Check your connection and try again.'),
+        ),
+      );
     }
   }
 
@@ -412,7 +454,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final body = SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24),
       child: Form(
         key: _formKey,
         child: Column(
@@ -422,7 +464,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             TextFormField(
               controller: _amountController,
               keyboardType: TextInputType.number,
-              style: const TextStyle(fontSize: 18),
+              style: TextStyle(fontSize: 18),
               decoration: InputDecoration(
                 labelText: 'Amount *',
                 prefixText: '₹ ',
@@ -433,39 +475,54 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               ),
               validator: Validators.validateAmount,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Category Dropdown - Fixed for dark mode
             DropdownButtonFormField<String>(
               value: _selectedCategory,
-              decoration: const InputDecoration(labelText: 'Category *'),
-              dropdownColor: isDark ? Colors.grey[900] : Colors.white,
+              decoration: InputDecoration(labelText: 'Category *'),
+              dropdownColor: isDark
+                  ? Theme.of(context).colorScheme.surface
+                  : Colors.white,
               style: TextStyle(
                 fontSize: 16,
                 color: isDark ? Colors.white : Colors.black,
               ),
-              items: AppConstants.expenseCategories.map((category) {
-                final icon =
-                    AppConstants.categoryIcons[category] ?? Icons.help_outline;
-                final color =
-                    AppConstants.categoryColors[category] ?? Colors.grey;
+              items:
+                  (widget.isIncome
+                          ? [
+                              'Salary',
+                              'Business',
+                              'Interest',
+                              'Gift',
+                              'Other income',
+                            ]
+                          : AppConstants.expenseCategories)
+                      .map((category) {
+                        final icon =
+                            AppConstants.categoryIcons[category] ??
+                            Icons.help_outline;
+                        final color =
+                            AppConstants.categoryColors[category] ??
+                            Colors.grey;
 
-                return DropdownMenuItem(
-                  value: category,
-                  child: Row(
-                    children: [
-                      Icon(icon, color: color, size: 20),
-                      const SizedBox(width: 12),
-                      Text(
-                        category,
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                        return DropdownMenuItem(
+                          value: category,
+                          child: Row(
+                            children: [
+                              Icon(icon, color: color, size: 20),
+                              SizedBox(width: 12),
+                              Text(
+                                category,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      })
+                      .toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedCategory = value;
@@ -473,31 +530,40 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               },
               validator: Validators.validateCategory,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Description
             TextFormField(
               controller: _descriptionController,
-              style: const TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: 16),
               decoration: InputDecoration(
                 labelText: 'Description *',
-                hintText: 'What did you spend on?',
-                suffixIcon: IconButton(
-                  icon: _isAutoCategorizing 
-                    ? const SizedBox(
-                        width: 20, 
-                        height: 20, 
-                        child: CircularProgressIndicator(strokeWidth: 2)
-                      )
-                    : const Icon(Icons.auto_awesome, color: AppTheme.primaryColor),
-                  onPressed: _isAutoCategorizing ? null : _autoCategorize,
-                  tooltip: 'Auto-categorize',
-                ),
+                hintText: widget.isIncome
+                    ? 'Where did this income come from?'
+                    : 'What did you spend on?',
+                suffixIcon: widget.isIncome
+                    ? null
+                    : IconButton(
+                        icon: _isAutoCategorizing
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Icon(
+                                Icons.auto_awesome,
+                                color: AppTheme.primaryColor,
+                              ),
+                        onPressed: _isAutoCategorizing ? null : _autoCategorize,
+                        tooltip: 'Auto-categorize',
+                      ),
               ),
               validator: (value) =>
                   Validators.validateRequired(value, 'Description'),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Date
             InkWell(
@@ -515,153 +581,161 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 }
               },
               child: InputDecorator(
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Date',
                   suffixIcon: Icon(Icons.calendar_today),
                 ),
                 child: Text(
                   '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                  style: const TextStyle(fontSize: 16),
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Receipt Scan Button
-            ReceiptScanButton(onDataExtracted: _handleOCRData),
-            const SizedBox(height: 24),
+            if (!widget.isIncome)
+              ReceiptScanButton(onDataExtracted: _handleOCRData),
+            SizedBox(height: 24),
 
             // Split Expense Section
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.grey[850]
-                    : AppTheme.primaryColor.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _isSplitExpense
-                      ? AppTheme.primaryColor
-                      : Colors.transparent,
-                  width: 2,
+            if (!widget.isIncome)
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Theme.of(context).colorScheme.surface
+                      : AppTheme.primaryColor.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _isSplitExpense
+                        ? AppTheme.primaryColor
+                        : Colors.transparent,
+                    width: 2,
+                  ),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.people,
-                        color: AppTheme.primaryColor,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.people,
+                          color: AppTheme.primaryColor,
+                          size: 24,
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Split Expense',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                'Share this expense with friends',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant
+                                      : Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _isSplitExpense,
+                          onChanged: widget.isIncome
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    _isSplitExpense = value;
+                                    if (!value) {
+                                      _selectedFriends.clear();
+                                    }
+                                  });
+                                },
+                        ),
+                      ],
+                    ),
+                    if (_isSplitExpense) ...[
+                      SizedBox(height: 12),
+                      Divider(),
+                      SizedBox(height: 12),
+                      if (_selectedFriends.isEmpty)
+                        OutlinedButton.icon(
+                          onPressed: _showSplitExpenseDialog,
+                          icon: Icon(Icons.person_add),
+                          label: Text('Select Friends'),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: Size(double.infinity, 48),
+                          ),
+                        )
+                      else ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Split Expense',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
                             Text(
-                              'Share this expense with friends',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark
-                                    ? Colors.grey[400]
-                                    : Colors.grey[600],
-                              ),
+                              '${_selectedFriends.length} friend(s) selected',
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                            TextButton(
+                              onPressed: _showSplitExpenseDialog,
+                              child: Text('Change'),
                             ),
                           ],
                         ),
-                      ),
-                      Switch(
-                        value: _isSplitExpense,
-                        onChanged: (value) {
-                          setState(() {
-                            _isSplitExpense = value;
-                            if (!value) {
-                              _selectedFriends.clear();
-                            }
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  if (_isSplitExpense) ...[
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 12),
-                    if (_selectedFriends.isEmpty)
-                      OutlinedButton.icon(
-                        onPressed: _showSplitExpenseDialog,
-                        icon: const Icon(Icons.person_add),
-                        label: const Text('Select Friends'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 48),
+                        SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _selectedFriends.map((friend) {
+                            return Chip(
+                              avatar: CircleAvatar(
+                                backgroundImage: friend.photoUrl != null
+                                    ? NetworkImage(friend.photoUrl!)
+                                    : null,
+                                child: friend.photoUrl == null
+                                    ? Text(friend.name[0].toUpperCase())
+                                    : null,
+                              ),
+                              label: Text(friend.name),
+                              onDeleted: () {
+                                setState(() {
+                                  _selectedFriends.removeWhere(
+                                    (f) => f.id == friend.id,
+                                  );
+                                });
+                              },
+                            );
+                          }).toList(),
                         ),
-                      )
-                    else ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${_selectedFriends.length} friend(s) selected',
-                            style: const TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                          TextButton(
-                            onPressed: _showSplitExpenseDialog,
-                            child: const Text('Change'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _selectedFriends.map((friend) {
-                          return Chip(
-                            avatar: CircleAvatar(
-                              backgroundImage: friend.photoUrl != null
-                                  ? NetworkImage(friend.photoUrl!)
-                                  : null,
-                              child: friend.photoUrl == null
-                                  ? Text(friend.name[0].toUpperCase())
-                                  : null,
-                            ),
-                            label: Text(friend.name),
-                            onDeleted: () {
-                              setState(() {
-                                _selectedFriends.removeWhere(
-                                  (f) => f.id == friend.id,
-                                );
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
+                      ],
                     ],
                   ],
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
+            SizedBox(height: 32),
 
             // Save Button
             SizedBox(
               height: 56,
               child: ElevatedButton(
-                onPressed: _handleSave,
+                onPressed: _saving ? null : _handleSave,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
                 ),
-                child: const Text(
-                  'Save Expense',
+                child: Text(
+                  widget.isIncome ? 'Save Income' : 'Save Expense',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -680,7 +754,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Expense'), elevation: 0),
+      appBar: AppBar(
+        title: Text(widget.isIncome ? 'Add Income' : 'Add Expense'),
+        elevation: 0,
+      ),
       body: body,
     );
   }

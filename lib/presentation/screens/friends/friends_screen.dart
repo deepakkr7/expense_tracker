@@ -44,10 +44,7 @@ class _FriendsScreenState extends State<FriendsScreen>
     try {
       final friendProvider = context.read<FriendProvider>();
       final authProvider = context.read<AuthProvider>();
-
-      print('🔍 Starting contacts import...');
       final contacts = await friendProvider.importContacts();
-      print('✅ Got ${contacts.length} contacts');
 
       if (!mounted) return;
 
@@ -103,10 +100,10 @@ class _FriendsScreenState extends State<FriendsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Friends & Groups'),
+        title: Text('Friends & Groups'),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
+          tabs: [
             Tab(text: 'Friends'),
             Tab(text: 'Groups'),
           ],
@@ -131,11 +128,11 @@ class _FriendsScreenState extends State<FriendsScreen>
     final friendProvider = context.watch<FriendProvider>();
 
     if (_isImporting) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator());
     }
 
     if (friendProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator());
     }
 
     if (friendProvider.friends.isEmpty) {
@@ -143,16 +140,25 @@ class _FriendsScreenState extends State<FriendsScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people_outline, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 16),
+            Icon(
+              Icons.people_outline,
+              size: 80,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            SizedBox(height: 16),
             Text(
               'No Friends Yet',
-              style: TextStyle(fontSize: 20, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 20,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Import contacts to add friends',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -160,24 +166,24 @@ class _FriendsScreenState extends State<FriendsScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       itemCount: friendProvider.friends.length,
       itemBuilder: (context, index) {
         final friend = friendProvider.friends[index];
         return Card(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: AppTheme.primaryColor,
               child: Text(
                 friend.name.substring(0, 1).toUpperCase(),
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.white),
               ),
             ),
             title: Text(friend.name),
             subtitle: friend.email.isNotEmpty ? Text(friend.email) : null,
             trailing: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: Icon(Icons.delete, color: Colors.red),
               onPressed: () => _deleteFriend(friend),
             ),
           ),
@@ -190,7 +196,7 @@ class _FriendsScreenState extends State<FriendsScreen>
     final groupProvider = context.watch<GroupProvider>();
 
     if (groupProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator());
     }
 
     if (groupProvider.groups.isEmpty) {
@@ -198,16 +204,25 @@ class _FriendsScreenState extends State<FriendsScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.group_outlined, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 16),
+            Icon(
+              Icons.group_outlined,
+              size: 80,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            SizedBox(height: 16),
             Text(
               'No Groups Yet',
-              style: TextStyle(fontSize: 20, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 20,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Create a group to organize friends',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -215,21 +230,18 @@ class _FriendsScreenState extends State<FriendsScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       itemCount: groupProvider.groups.length,
       itemBuilder: (context, index) {
         final group = groupProvider.groups[index];
         return Card(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: EdgeInsets.only(bottom: 12),
           child: ListTile(
-            leading: Text(
-              group.emoji ?? '👥',
-              style: const TextStyle(fontSize: 32),
-            ),
+            leading: Text(group.emoji ?? '👥', style: TextStyle(fontSize: 32)),
             title: Text(group.name),
             subtitle: Text('${group.memberIds.length} members'),
             trailing: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: Icon(Icons.delete, color: Colors.red),
               onPressed: () => _deleteGroup(group.id),
             ),
           ),
@@ -241,7 +253,7 @@ class _FriendsScreenState extends State<FriendsScreen>
   void _createGroup() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const CreateGroupScreen()),
+      MaterialPageRoute(builder: (_) => CreateGroupScreen()),
     );
   }
 
@@ -249,17 +261,17 @@ class _FriendsScreenState extends State<FriendsScreen>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Friend?'),
+        title: Text('Delete Friend?'),
         content: Text('Remove ${friend.name} from your friends?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -277,7 +289,7 @@ class _FriendsScreenState extends State<FriendsScreen>
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Friend removed')));
+        ).showSnackBar(SnackBar(content: Text('Friend removed')));
       }
     }
   }
@@ -286,17 +298,17 @@ class _FriendsScreenState extends State<FriendsScreen>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Group?'),
-        content: const Text('This action cannot be undone'),
+        title: Text('Delete Group?'),
+        content: Text('This action cannot be undone'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -311,7 +323,7 @@ class _FriendsScreenState extends State<FriendsScreen>
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Group deleted')));
+        ).showSnackBar(SnackBar(content: Text('Group deleted')));
       }
     }
   }
@@ -334,7 +346,7 @@ class _ContactSelectionDialogState extends State<_ContactSelectionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Select Contacts'),
+      title: Text('Select Contacts'),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView.builder(
@@ -366,7 +378,7 @@ class _ContactSelectionDialogState extends State<_ContactSelectionDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: _selectedContacts.isEmpty

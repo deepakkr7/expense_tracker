@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/money.dart';
 
 class MonthlyIncomeScreen extends StatefulWidget {
   const MonthlyIncomeScreen({super.key});
@@ -22,7 +23,7 @@ class _MonthlyIncomeScreenState extends State<MonthlyIncomeScreen>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: Duration(milliseconds: 800),
       vsync: this,
     );
 
@@ -30,11 +31,13 @@ class _MonthlyIncomeScreenState extends State<MonthlyIncomeScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+    _slideAnimation = Tween<Offset>(begin: Offset(0, 0.3), end: Offset.zero)
+        .animate(
           CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
         );
 
+    final income = context.read<AuthProvider>().currentUser?.monthlyIncome ?? 0;
+    if (income > 0) _incomeController.text = income.toStringAsFixed(2);
     _animationController.forward();
   }
 
@@ -45,15 +48,26 @@ class _MonthlyIncomeScreenState extends State<MonthlyIncomeScreen>
     super.dispose();
   }
 
-  void _skip() {
-    Navigator.pushReplacementNamed(context, '/home');
+  Future<void> _skip() async {
+    final auth = context.read<AuthProvider>();
+    final user = auth.currentUser;
+    if (user == null) return;
+    try {
+      await auth.updateUser(user.copyWith(incomeSetupCompleted: true));
+      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+    } catch (_) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not save. Please try again.')),
+        );
+    }
   }
 
   void _next() {
-    final income = double.tryParse(_incomeController.text);
-    if (income == null || income <= 0) {
+    final incomeMinor = Money.parseMinor(_incomeController.text);
+    if (incomeMinor == null || incomeMinor <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid income amount')),
+        SnackBar(content: Text('Please enter a valid income amount')),
       );
       return;
     }
@@ -62,7 +76,7 @@ class _MonthlyIncomeScreenState extends State<MonthlyIncomeScreen>
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => MonthlySavingsScreen(monthlyIncome: income),
+        builder: (_) => MonthlySavingsScreen(monthlyIncome: incomeMinor / 100),
       ),
     );
   }
@@ -92,14 +106,14 @@ class _MonthlyIncomeScreenState extends State<MonthlyIncomeScreen>
               Align(
                 alignment: Alignment.topRight,
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   child: TextButton(
                     onPressed: _skip,
-                    child: const Text(
-                      'Skip',
+                    child: Text(
+                      'Skip for now',
                       style: TextStyle(
                         fontSize: 16,
-                        color: AppTheme.textSecondaryColor,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -108,7 +122,7 @@ class _MonthlyIncomeScreenState extends State<MonthlyIncomeScreen>
 
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(24),
                   child: FadeTransition(
                     opacity: _fadeAnimation,
                     child: SlideTransition(
@@ -116,7 +130,7 @@ class _MonthlyIncomeScreenState extends State<MonthlyIncomeScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const SizedBox(height: 40),
+                          SizedBox(height: 40),
 
                           // Greeting
                           Text(
@@ -124,16 +138,20 @@ class _MonthlyIncomeScreenState extends State<MonthlyIncomeScreen>
                             style: Theme.of(context).textTheme.displayMedium,
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
 
                           // Question
                           Text(
                             'What is your $monthName income?',
                             style: Theme.of(context).textTheme.displaySmall
-                                ?.copyWith(color: AppTheme.textSecondaryColor),
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 60),
+                          SizedBox(height: 60),
 
                           // Income illustration
                           Container(
@@ -143,7 +161,7 @@ class _MonthlyIncomeScreenState extends State<MonthlyIncomeScreen>
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [AppTheme.cardShadow],
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Icon(
                                 Icons.account_balance_wallet,
                                 size: 80,
@@ -151,42 +169,50 @@ class _MonthlyIncomeScreenState extends State<MonthlyIncomeScreen>
                               ),
                             ),
                           ),
-                          const SizedBox(height: 40),
+                          SizedBox(height: 40),
 
                           // Income input
                           Container(
-                            padding: const EdgeInsets.all(24),
+                            padding: EdgeInsets.all(24),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [AppTheme.cardShadow],
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Monthly Income',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: AppTheme.textSecondaryColor,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                   ),
                                 ),
-                                const SizedBox(height: 12),
+                                SizedBox(height: 12),
                                 TextField(
                                   controller: _incomeController,
                                   keyboardType: TextInputType.number,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryColor,
+                                    color: AppTheme.readableColor(
+                                      context,
+                                      AppTheme.primaryColor,
+                                    ),
                                   ),
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     prefixText: '₹ ',
                                     prefixStyle: TextStyle(
                                       fontSize: 32,
                                       fontWeight: FontWeight.bold,
-                                      color: AppTheme.primaryColor,
+                                      color: AppTheme.readableColor(
+                                        context,
+                                        AppTheme.primaryColor,
+                                      ),
                                     ),
                                     hintText: '0',
                                     border: InputBorder.none,
@@ -195,7 +221,7 @@ class _MonthlyIncomeScreenState extends State<MonthlyIncomeScreen>
                               ],
                             ),
                           ),
-                          const SizedBox(height: 40),
+                          SizedBox(height: 40),
 
                           // Next button
                           SizedBox(
@@ -208,7 +234,7 @@ class _MonthlyIncomeScreenState extends State<MonthlyIncomeScreen>
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Next',
                                 style: TextStyle(
                                   fontSize: 18,
@@ -253,7 +279,7 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: Duration(milliseconds: 800),
       vsync: this,
     );
 
@@ -261,8 +287,8 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+    _slideAnimation = Tween<Offset>(begin: Offset(0, 0.3), end: Offset.zero)
+        .animate(
           CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
         );
 
@@ -277,11 +303,14 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
   }
 
   Future<void> _save() async {
-    final savings = double.tryParse(_savingsController.text) ?? 0.0;
-
-    if (savings < 0) {
+    final savingsMinor = Money.parseMinor(
+      _savingsController.text.isEmpty ? '0' : _savingsController.text,
+    );
+    if (savingsMinor == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Savings goal cannot be negative')),
+        SnackBar(
+          content: Text('Enter a valid amount with up to 2 decimal places'),
+        ),
       );
       return;
     }
@@ -295,8 +324,9 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
       if (user != null) {
         final updatedUser = user.copyWith(
           monthlyIncome: widget.monthlyIncome,
-          savingsGoal: savings,
+          savingsGoal: savingsMinor / 100,
           lastIncomeSetMonth: DateTime.now(),
+          incomeSetupCompleted: true,
         );
 
         await authProvider.updateUser(updatedUser);
@@ -336,7 +366,7 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             child: FadeTransition(
               opacity: _fadeAnimation,
               child: SlideTransition(
@@ -344,7 +374,7 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 40),
+                    SizedBox(height: 40),
 
                     // Question
                     Text(
@@ -352,16 +382,16 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
                       style: Theme.of(context).textTheme.displayMedium,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     Text(
                       'What is your $monthName monthly limit?',
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        color: AppTheme.textSecondaryColor,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 60),
+                    SizedBox(height: 60),
 
                     // Limit illustration
                     Container(
@@ -371,7 +401,7 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [AppTheme.cardShadow],
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Icon(
                           Icons.request_page,
                           size: 80,
@@ -379,11 +409,11 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    SizedBox(height: 40),
 
                     // Income summary
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: AppTheme.successColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -391,55 +421,62 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Monthly Income',
                             style: TextStyle(
                               fontSize: 14,
-                              color: AppTheme.textSecondaryColor,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                           Text(
                             '₹${widget.monthlyIncome.toStringAsFixed(0)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.successColor,
+                              color: AppTheme.readableColor(
+                                context,
+                                AppTheme.successColor,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     // Savings input
                     Container(
-                      padding: const EdgeInsets.all(24),
+                      padding: EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [AppTheme.cardShadow],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Monthly Limit',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.textSecondaryColor,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           TextField(
                             controller: _savingsController,
                             keyboardType: TextInputType.number,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
                               color: AppTheme.accentColor,
                             ),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               prefixText: '₹ ',
                               prefixStyle: TextStyle(
                                 fontSize: 32,
@@ -453,7 +490,7 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
                         ],
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    SizedBox(height: 40),
 
                     // Save button
                     SizedBox(
@@ -467,10 +504,8 @@ class _MonthlySavingsScreenState extends State<MonthlySavingsScreen>
                           ),
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                            : const Text(
+                            ? CircularProgressIndicator(color: Colors.white)
+                            : Text(
                                 'Save & Continue',
                                 style: TextStyle(
                                   fontSize: 18,

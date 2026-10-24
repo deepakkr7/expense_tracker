@@ -86,13 +86,10 @@ class _MonthlyExpenseEntryScreenState extends State<MonthlyExpenseEntryScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Monthly Overview', style: TextStyle(fontSize: 16)),
+            Text('Monthly Overview', style: TextStyle(fontSize: 16)),
             Text(
               monthName,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.normal,
-              ),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
             ),
           ],
         ),
@@ -100,7 +97,7 @@ class _MonthlyExpenseEntryScreenState extends State<MonthlyExpenseEntryScreen> {
         actions: [
           // Previous Month
           IconButton(
-            icon: const Icon(Icons.chevron_left),
+            icon: Icon(Icons.chevron_left),
             onPressed: _previousMonth,
             tooltip: 'Previous Month',
           ),
@@ -117,24 +114,24 @@ class _MonthlyExpenseEntryScreenState extends State<MonthlyExpenseEntryScreen> {
                   _loadMonthData();
                 });
               },
-              child: const Text('Today', style: TextStyle(fontSize: 12)),
+              child: Text('Today', style: TextStyle(fontSize: 12)),
             ),
           // Next Month (disabled if current or future)
           IconButton(
-            icon: const Icon(Icons.chevron_right),
+            icon: Icon(Icons.chevron_right),
             onPressed: _isCurrentMonth() ? null : _nextMonth,
             tooltip: 'Next Month',
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Monthly Summary Card
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
                 gradient: AppTheme.primaryGradient,
                 borderRadius: BorderRadius.circular(20),
@@ -143,62 +140,65 @@ class _MonthlyExpenseEntryScreenState extends State<MonthlyExpenseEntryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Total Expenses',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                    style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     '₹${monthlyTotal.toStringAsFixed(0)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   if (budget != null) ...[
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       'Budget: ₹${budget.categoryBudgets.values.fold(0.0, (sum, val) => sum + val).toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.white, fontSize: 14),
                     ),
                   ],
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Category Breakdown Header
             Text(
               'Category Breakdown',
               style: Theme.of(context).textTheme.displaySmall,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // Category Cards
             if (categoryTotals.isEmpty)
               Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(48),
+                  padding: EdgeInsets.all(48),
                   child: Column(
                     children: [
                       Icon(
                         Icons.receipt_long_outlined,
                         size: 64,
-                        color: Colors.grey[400],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Text(
                         'No expenses this month',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 16,
+                        ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         'Start adding expenses to see breakdown',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -218,34 +218,34 @@ class _MonthlyExpenseEntryScreenState extends State<MonthlyExpenseEntryScreen> {
 
                 // Only show categories with expenses or budget
                 if (spent == 0 && budgetAmount == 0) {
-                  return const SizedBox.shrink();
+                  return SizedBox.shrink();
                 }
 
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin: EdgeInsets.only(bottom: 12),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(10),
+                              padding: EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: color.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(icon, color: color, size: 24),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     category,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 16,
                                     ),
@@ -254,7 +254,9 @@ class _MonthlyExpenseEntryScreenState extends State<MonthlyExpenseEntryScreen> {
                                     Text(
                                       'Budget: ₹${budgetAmount.toStringAsFixed(0)}',
                                       style: TextStyle(
-                                        color: Colors.grey[600],
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -286,7 +288,9 @@ class _MonthlyExpenseEntryScreenState extends State<MonthlyExpenseEntryScreen> {
                                           ? AppTheme.errorColor
                                           : percentage > 0.8
                                           ? AppTheme.warningColor
-                                          : Colors.grey[600],
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                               ],
@@ -294,13 +298,15 @@ class _MonthlyExpenseEntryScreenState extends State<MonthlyExpenseEntryScreen> {
                           ],
                         ),
                         if (budgetAmount > 0) ...[
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: percentage > 1.0 ? 1.0 : percentage,
                               minHeight: 8,
-                              backgroundColor: Colors.grey[200],
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 percentage > 1.0
                                     ? AppTheme.errorColor
@@ -310,7 +316,7 @@ class _MonthlyExpenseEntryScreenState extends State<MonthlyExpenseEntryScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -334,7 +340,9 @@ class _MonthlyExpenseEntryScreenState extends State<MonthlyExpenseEntryScreen> {
                                 'Remaining: ₹${(budgetAmount - spent).toStringAsFixed(0)}',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.grey[600],
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],

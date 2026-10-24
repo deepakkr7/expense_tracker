@@ -31,7 +31,7 @@ class _EditBorrowedMoneyScreenState extends State<EditBorrowedMoneyScreen> {
       text: widget.transaction.personName,
     );
     _amountController = TextEditingController(
-      text: widget.transaction.amount.toStringAsFixed(0),
+      text: widget.transaction.amount.toStringAsFixed(2),
     );
     _descriptionController = TextEditingController(
       text: widget.transaction.description ?? '',

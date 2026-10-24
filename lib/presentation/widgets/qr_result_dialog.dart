@@ -3,20 +3,82 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/payment_qr_data.dart';
 import '../../core/theme/app_theme.dart';
 
-class QRResultDialog extends StatelessWidget {
+class QRResultDialog extends StatefulWidget {
   final PaymentQRData qrData;
+  final Future<bool> Function(Uri)? openPayment;
 
-  const QRResultDialog({super.key, required this.qrData});
+  const QRResultDialog({super.key, required this.qrData, this.openPayment});
+
+  @override
+  State<QRResultDialog> createState() => _QRResultDialogState();
+}
+
+class _QRResultDialogState extends State<QRResultDialog>
+    with WidgetsBindingObserver {
+  PaymentQRData get qrData => widget.qrData;
+  bool _opened = false;
+  bool _left = false;
+  bool _asking = false;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_opened && state == AppLifecycleState.paused) _left = true;
+    if (_opened && _left && state == AppLifecycleState.resumed)
+      _confirmPayment();
+  }
+
+  Future<void> _confirmPayment() async {
+    if (_asking || !mounted) return;
+    _asking = true;
+    final completed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Did you complete payment?'),
+        content: const Text(
+          'Confirm only if your payment app shows success. You can review and save the expense next.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('No'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Yes, review expense'),
+          ),
+        ],
+      ),
+    );
+    _asking = false;
+    _left = false;
+    if (completed == true && mounted) Navigator.pop(context, qrData);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (_opened)
+              TextButton(
+                onPressed: _confirmPayment,
+                child: const Text('I completed payment — review expense'),
+              ),
             // Provider Icon
             Container(
               width: 80,
@@ -31,59 +93,66 @@ class QRResultDialog extends StatelessWidget {
                 color: _getProviderColor(),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // Provider Name
             Text(
               qrData.providerName,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
 
             Text(
               'QR Code Detected',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 14,
+              ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Merchant Name
             if (qrData.merchantName != null) ...[
               _buildInfoRow(
+                context,
                 icon: Icons.store,
                 label: 'Merchant',
                 value: qrData.merchantName!,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
             ],
 
             // Amount
             if (qrData.amount != null) ...[
               _buildInfoRow(
+                context,
                 icon: Icons.currency_rupee,
                 label: 'Amount',
                 value: '₹${qrData.amount!.toStringAsFixed(2)}',
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
             ],
 
             // Transaction Note
             if (qrData.transactionNote != null) ...[
               _buildInfoRow(
+                context,
                 icon: Icons.note,
                 label: 'Note',
                 value: qrData.transactionNote!,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
             ],
 
             // UPI ID
             if (qrData.upiParams['pa'] != null) ...[
               _buildInfoRow(
+                context,
                 icon: Icons.account_circle,
                 label: 'UPI ID',
                 value: qrData.upiParams['pa']!,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
             ],
 
             // Buttons
@@ -93,25 +162,29 @@ class QRResultDialog extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(color: Colors.grey[300]!),
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      side: BorderSide(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                      ),
                     ),
-                    child: const Text('Cancel'),
+                    child: Text('Cancel'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   flex: 2,
                   child: ElevatedButton.icon(
                     onPressed: () => _openPaymentApp(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _getProviderColor(),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: EdgeInsets.symmetric(vertical: 14),
                     ),
-                    icon: const Icon(Icons.open_in_new, color: Colors.white),
+                    icon: Icon(Icons.open_in_new, color: Colors.white),
                     label: Text(
                       'Open ${_getShortProviderName()}',
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
@@ -123,36 +196,41 @@ class QRResultDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow({
+  Widget _buildInfoRow(
+    BuildContext context, {
     required IconData icon,
     required String label,
     required String value,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey[700]),
-          const SizedBox(width: 12),
+          Icon(
+            icon,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -167,11 +245,11 @@ class QRResultDialog extends StatelessWidget {
   Color _getProviderColor() {
     switch (qrData.provider) {
       case PaymentProvider.gpay:
-        return const Color(0xFF4285F4); // Google blue
+        return Color(0xFF4285F4); // Google blue
       case PaymentProvider.phonePe:
-        return const Color(0xFF5F259F); // PhonePe purple
+        return Color(0xFF5F259F); // PhonePe purple
       case PaymentProvider.paytm:
-        return const Color(0xFF00B9F5); // Paytm blue
+        return Color(0xFF00B9F5); // Paytm blue
       case PaymentProvider.upi:
         return AppTheme.primaryColor;
       case PaymentProvider.unknown:
@@ -210,65 +288,54 @@ class QRResultDialog extends StatelessWidget {
   }
 
   Future<void> _openPaymentApp(BuildContext context) async {
-    String url = qrData.originalUrl;
-
+    if (_opened && _left) return;
+    final address = qrData.upiParams['pa'];
+    if (address == null || !address.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'This QR code does not contain a valid UPI payment address.',
+          ),
+        ),
+      );
+      return;
+    }
+    final amount = qrData.upiParams['am'];
+    if (amount != null &&
+        (double.tryParse(amount) == null ||
+            !double.parse(amount).isFinite ||
+            double.parse(amount) <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This QR code contains an invalid payment amount.'),
+        ),
+      );
+      return;
+    }
+    final uri = Uri(
+      scheme: 'upi',
+      host: 'pay',
+      queryParameters: qrData.upiParams,
+    );
     try {
-      // For generic UPI, convert to Android Intent format
-      if (qrData.provider == PaymentProvider.upi) {
-        // Android Intent URL format for UPI
-        url =
-            'intent://$url#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end';
-      } else if (qrData.providerAppUrl != null) {
-        url = qrData.providerAppUrl!;
-      }
-
-      final uri = Uri.parse(url);
-
-      // Try to launch with different modes based on provider
-      if (qrData.provider == PaymentProvider.upi) {
-        // For UPI, try external application mode first
-        final launched = await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
-
-        if (!launched && context.mounted) {
-          // If that fails, show list of UPI apps
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Please install a UPI app (GPay, PhonePe, Paytm, etc.)',
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        } else if (context.mounted) {
-          Navigator.pop(context);
-        }
-      } else {
-        // For specific providers
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-          if (context.mounted) {
-            Navigator.pop(context);
-          }
-        } else {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${qrData.providerName} app not installed'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
+      setState(() => _opened = true);
+      final launched =
+          await (widget.openPayment?.call(uri) ??
+              launchUrl(uri, mode: LaunchMode.externalApplication));
+      if (!launched && mounted) {
+        setState(() => _opened = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening app: $e'),
-            backgroundColor: Colors.red,
+          const SnackBar(
+            content: Text('Install a UPI payment app to continue.'),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _opened = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open a payment app. Please try again.'),
           ),
         );
       }

@@ -34,7 +34,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
     if (_selectedFriendIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one friend')),
+        SnackBar(content: Text('Please select at least one friend')),
       );
       return;
     }
@@ -46,7 +46,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       final groupProvider = context.read<GroupProvider>();
 
       final group = GroupModel(
-        id: const Uuid().v4(),
+        id: Uuid().v4(),
         userId: authProvider.currentUser!.id,
         name: _nameController.text.trim(),
         emoji: _selectedEmoji,
@@ -59,7 +59,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Group created!'),
             backgroundColor: AppTheme.successColor,
           ),
@@ -83,9 +83,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     final friendProvider = context.watch<FriendProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Group')),
+      appBar: AppBar(title: Text('Create Group')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -94,7 +94,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
               // Group Name
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Group Name',
                   prefixIcon: Icon(Icons.group),
                   hintText: 'e.g., Roommates, Trip Squad',
@@ -106,11 +106,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Emoji Selector
-              const Text('Choose Emoji', style: TextStyle(fontSize: 16)),
-              const SizedBox(height: 12),
+              Text('Choose Emoji', style: TextStyle(fontSize: 16)),
+              SizedBox(height: 12),
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -119,11 +119,13 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                   return GestureDetector(
                     onTap: () => setState(() => _selectedEmoji = emoji),
                     child: Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppTheme.primaryColor.withOpacity(0.2)
-                            : Colors.grey[200],
+                            : Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
@@ -132,28 +134,32 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                           width: 2,
                         ),
                       ),
-                      child: Text(emoji, style: const TextStyle(fontSize: 32)),
+                      child: Text(emoji, style: TextStyle(fontSize: 32)),
                     ),
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Member Selection
-              const Text('Select Members', style: TextStyle(fontSize: 16)),
-              const SizedBox(height: 12),
+              Text('Select Members', style: TextStyle(fontSize: 16)),
+              SizedBox(height: 12),
 
               if (friendProvider.friends.isEmpty)
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
+                  child: Text(
                     'No friends available. Import contacts first.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 )
               else
@@ -177,7 +183,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                   );
                 }),
 
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
 
               // Save Button
               SizedBox(
@@ -188,8 +194,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                     backgroundColor: AppTheme.primaryColor,
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text(
                           'Create Group',
                           style: TextStyle(
                             fontSize: 16,

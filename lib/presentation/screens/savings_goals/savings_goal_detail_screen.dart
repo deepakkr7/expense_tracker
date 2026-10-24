@@ -31,9 +31,9 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
 
     final amount = double.tryParse(_depositController.text);
     if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter valid amount')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Please enter valid amount')));
       return;
     }
 
@@ -77,28 +77,25 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
         ),
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Add Deposit',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TextField(
                 controller: _depositController,
                 keyboardType: TextInputType.number,
                 autofocus: true,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: const InputDecoration(
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
                   labelText: 'Amount',
                   prefixText: '₹ ',
                   prefixStyle: TextStyle(
@@ -107,14 +104,14 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _addDeposit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text(
+                child: Text(
                   'Add Deposit',
                   style: TextStyle(
                     fontSize: 16,
@@ -134,19 +131,19 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Goal?'),
-        content: const Text(
+        title: Text('Delete Goal?'),
+        content: Text(
           'Are you sure you want to delete this savings goal? This action cannot be undone.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -166,7 +163,7 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
           Navigator.pop(context);
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Goal deleted')));
+          ).showSnackBar(SnackBar(content: Text('Goal deleted')));
         }
       } catch (e) {
         if (mounted) {
@@ -191,13 +188,11 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Goal Details'),
-        actions: [
-          IconButton(icon: const Icon(Icons.delete), onPressed: _deleteGoal),
-        ],
+        title: Text('Goal Details'),
+        actions: [IconButton(icon: Icon(Icons.delete), onPressed: _deleteGoal)],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -218,9 +213,9 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
                         goal.emoji ??
                             SavingsGoalCategories.emojis[goal.category] ??
                             '🎯',
-                        style: const TextStyle(fontSize: 48),
+                        style: TextStyle(fontSize: 48),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         '${(goal.progress * 100).toStringAsFixed(1)}%',
                         style: TextStyle(
@@ -234,20 +229,23 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Goal Name
             Text(
               goal.name,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               goal.category,
-              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 16,
+              ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Amount Stats
             Row(
@@ -259,7 +257,7 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
                     Colors.green,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: _buildStatCard(
                     'Target',
@@ -269,7 +267,7 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -280,7 +278,7 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
                   ),
                 ),
                 if (goal.suggestedMonthlySaving != null) ...[
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: _buildStatCard(
                       'Monthly',
@@ -291,12 +289,12 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
                 ],
               ],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Target Date Info
             if (goal.targetDate != null) ...[
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: goal.daysRemaining! < 0
                       ? Colors.red.withOpacity(0.1)
@@ -312,7 +310,7 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
                           ? Colors.red
                           : AppTheme.primaryColor,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Text(
                       goal.daysRemaining! < 0
                           ? '${-goal.daysRemaining!} days overdue'
@@ -328,24 +326,21 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
             ],
 
             // Description
             if (goal.description != null && goal.description!.isNotEmpty) ...[
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  goal.description!,
-                  style: const TextStyle(fontSize: 14),
-                ),
+                child: Text(goal.description!, style: TextStyle(fontSize: 14)),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
             ],
 
             // AI Coach Button
@@ -362,21 +357,24 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
                       builder: (context) => SavingsGoalChatSheet(goal: goal),
                     );
                   },
-                  icon: const Icon(Icons.psychology, color: AppTheme.primaryColor),
-                  label: const Text(
+                  icon: Icon(Icons.psychology, color: AppTheme.primaryColor),
+                  label: Text(
                     'AI Savings Coach',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryColor,
+                      color: AppTheme.readableColor(
+                        context,
+                        AppTheme.primaryColor,
+                      ),
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                    side: BorderSide(color: AppTheme.primaryColor, width: 2),
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
 
               // Add Deposit Button
               SizedBox(
@@ -387,8 +385,8 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                   ),
-                  icon: const Icon(Icons.add_circle, color: Colors.white),
-                  label: const Text(
+                  icon: Icon(Icons.add_circle, color: Colors.white),
+                  label: Text(
                     'Add Deposit',
                     style: TextStyle(
                       fontSize: 16,
@@ -401,14 +399,14 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
             ] else ...[
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Colors.green, Color(0xFF00C853)],
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF146C43), Color(0xFF105C38)],
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Column(
+                child: Column(
                   children: [
                     Icon(Icons.check_circle, color: Colors.white, size: 48),
                     SizedBox(height: 8),
@@ -433,7 +431,7 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
 
   Widget _buildStatCard(String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
@@ -443,16 +441,16 @@ class _SavingsGoalDetailScreenState extends State<SavingsGoalDetailScreen> {
           Text(
             label,
             style: TextStyle(
-              color: color,
+              color: AppTheme.readableColor(context, color),
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             value,
             style: TextStyle(
-              color: color,
+              color: AppTheme.readableColor(context, color),
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),

@@ -65,31 +65,11 @@ class QRProcessorService {
   /// Parse UPI URL and extract parameters
   /// Format: upi://pay?pa=merchant@upi&pn=Merchant Name&am=100.00&tn=Payment note
   Map<String, String> parseUPIUrl(String url) {
-    final Map<String, String> params = {};
-
     try {
-      // Remove upi://pay? prefix if present
-      String queryString = url;
-      if (url.contains('?')) {
-        queryString = url.split('?')[1];
-      }
-
-      // Split by & and parse key-value pairs
-      final pairs = queryString.split('&');
-      for (final pair in pairs) {
-        final keyValue = pair.split('=');
-        if (keyValue.length == 2) {
-          final key = keyValue[0];
-          final value = Uri.decodeComponent(keyValue[1]);
-          params[key] = value;
-        }
-      }
-    } catch (e) {
-      // If parsing fails, return empty map
+      return Uri.parse(url).queryParameters;
+    } catch (_) {
       return {};
     }
-
-    return params;
   }
 
   /// Generate app-specific payment URL

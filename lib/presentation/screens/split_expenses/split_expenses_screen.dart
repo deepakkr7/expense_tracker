@@ -50,17 +50,17 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Split Expenses'), elevation: 0),
+      appBar: AppBar(title: Text('Split Expenses'), elevation: 0),
       body: splitProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               child: Column(
                 children: [
                   // Summary Card
                   Container(
                     width: double.infinity,
-                    margin: const EdgeInsets.all(16),
-                    padding: const EdgeInsets.all(20),
+                    margin: EdgeInsets.all(16),
+                    padding: EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -73,36 +73,33 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
                         BoxShadow(
                           color: AppTheme.primaryColor.withOpacity(0.3),
                           blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          offset: Offset(0, 4),
                         ),
                       ],
                     ),
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           'Total Balance',
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                          style: TextStyle(color: Colors.white, fontSize: 14),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text(
                           '₹${totalOwed.toStringAsFixed(0)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 36,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           totalOwed > 0
                               ? 'Others owe you'
                               : totalOwed < 0
                               ? 'You owe others'
                               : 'All settled!',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 14),
                         ),
                       ],
                     ),
@@ -111,11 +108,11 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
                   // Balances List
                   if (balances.isNotEmpty) ...[
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Balances',
                             style: TextStyle(
                               fontSize: 18,
@@ -125,14 +122,16 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
                           Text(
                             '${balances.length} ${balances.length == 1 ? 'person' : 'people'}',
                             style: TextStyle(
-                              color: Colors.grey[600],
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                               fontSize: 14,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     ...balances.entries.map((entry) {
                       final friendId = entry.key;
                       final amount = entry.value;
@@ -147,11 +146,11 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
 
                       // Skip if no friend data available
                       if (friend == null) {
-                        return const SizedBox.shrink();
+                        return SizedBox.shrink();
                       }
 
                       return Card(
-                        margin: const EdgeInsets.symmetric(
+                        margin: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 6,
                         ),
@@ -162,7 +161,7 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
                                 : Colors.orange,
                             child: Text(
                               friend.name.substring(0, 1).toUpperCase(),
-                              style: const TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.white),
                             ),
                           ),
                           title: Text(friend.name),
@@ -189,41 +188,49 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
                     }),
                   ] else
                     Padding(
-                      padding: const EdgeInsets.all(40),
+                      padding: EdgeInsets.all(40),
                       child: Column(
                         children: [
                           Icon(
                             Icons.account_balance_wallet_outlined,
                             size: 80,
-                            color: Colors.grey[400],
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text(
                             'No Split Expenses',
                             style: TextStyle(
                               fontSize: 20,
-                              color: Colors.grey[600],
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'Tap + to create your first split expense',
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
                     ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Recent Expenses
                   if (splitProvider.pendingSplitExpenses.isNotEmpty) ...[
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Pending Expenses',
                             style: TextStyle(
                               fontSize: 18,
@@ -233,17 +240,19 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
                           Text(
                             '${splitProvider.pendingSplitExpenses.length}',
                             style: TextStyle(
-                              color: Colors.grey[600],
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                               fontSize: 14,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     ...splitProvider.pendingSplitExpenses.map((expense) {
                       return Card(
-                        margin: const EdgeInsets.symmetric(
+                        margin: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 6,
                         ),
@@ -252,7 +261,7 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
                             backgroundColor: AppTheme.primaryColor.withOpacity(
                               0.2,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.receipt_long,
                               color: AppTheme.primaryColor,
                             ),
@@ -267,7 +276,7 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
                             children: [
                               Text(
                                 '₹${expense.totalAmount.toStringAsFixed(0)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -276,7 +285,9 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
                                 '${expense.splits.length} people',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey[600],
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -295,7 +306,7 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
                     }),
                   ],
 
-                  const SizedBox(height: 80),
+                  SizedBox(height: 80),
                 ],
               ),
             ),
@@ -303,11 +314,11 @@ class _SplitExpensesScreenState extends State<SplitExpensesScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const CreateSplitExpenseScreen()),
+            MaterialPageRoute(builder: (_) => CreateSplitExpenseScreen()),
           );
         },
-        icon: const Icon(Icons.add),
-        label: const Text('Split Expense'),
+        icon: Icon(Icons.add),
+        label: Text('Split Expense'),
         backgroundColor: AppTheme.primaryColor,
       ),
     );

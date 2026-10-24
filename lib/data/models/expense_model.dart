@@ -1,3 +1,4 @@
+import '../../core/utils/money.dart';
 import 'package:equatable/equatable.dart';
 
 class ExpenseModel extends Equatable {
@@ -30,7 +31,8 @@ class ExpenseModel extends Equatable {
     return {
       'id': id,
       'userId': userId,
-      'amount': amount,
+      'amount': Money.normalize(amount),
+      'amountMinor': Money.minor(amount),
       'category': category,
       'description': description,
       'date': date.toIso8601String(),

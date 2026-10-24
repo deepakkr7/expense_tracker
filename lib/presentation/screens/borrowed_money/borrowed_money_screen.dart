@@ -52,7 +52,7 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Borrowed Money'),
+        title: Text('Borrowed Money'),
         actions: [
           IconButton(
             icon: Icon(
@@ -73,31 +73,31 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
           // Total Unpaid Card
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.red.shade400, Colors.red.shade600],
+                colors: [Colors.red.shade800, Colors.red.shade900],
               ),
             ),
             child: Column(
               children: [
-                const Text(
+                Text(
                   'Total Unpaid',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  style: TextStyle(color: Colors.white, fontSize: 14),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   '₹${totalUnpaid.toStringAsFixed(2)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   '${unpaidByPerson.length} ${unpaidByPerson.length == 1 ? 'person' : 'people'}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ],
             ),
@@ -105,7 +105,7 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
 
           // Toggle Filter
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: Row(
               children: [
                 Expanded(
@@ -140,20 +140,24 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                         Icon(
                           Icons.account_balance_wallet,
                           size: 64,
-                          color: Colors.grey[400],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         Text(
                           _showOnlyUnpaid
                               ? 'No unpaid borrowed money'
                               : 'No borrowed money records',
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: EdgeInsets.symmetric(horizontal: 16),
                     itemCount: displayData.length,
                     itemBuilder: (context, index) {
                       final personName = displayData.keys.elementAt(index);
@@ -165,7 +169,7 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                           .length;
 
                       return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
+                        margin: EdgeInsets.only(bottom: 12),
                         child: InkWell(
                           onTap: () {
                             _showPersonDetails(
@@ -176,7 +180,7 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(16),
                             child: Row(
                               children: [
                                 // Avatar
@@ -186,14 +190,17 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                                       .withOpacity(0.1),
                                   child: Text(
                                     personName[0].toUpperCase(),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,
-                                      color: AppTheme.primaryColor,
+                                      color: AppTheme.readableColor(
+                                        context,
+                                        AppTheme.primaryColor,
+                                      ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 16),
+                                SizedBox(width: 16),
                                 // Details
                                 Expanded(
                                   child: Column(
@@ -202,18 +209,20 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                                     children: [
                                       Text(
                                         personName,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      SizedBox(height: 4),
                                       Text(
                                         _showOnlyUnpaid
                                             ? '$unpaidCount unpaid ${unpaidCount == 1 ? 'transaction' : 'transactions'}'
                                             : '${transactions.length} total ${transactions.length == 1 ? 'transaction' : 'transactions'}',
                                         style: TextStyle(
-                                          color: Colors.grey[600],
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
                                           fontSize: 12,
                                         ),
                                       ),
@@ -234,10 +243,12 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                                             : AppTheme.primaryColor,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    const Icon(
+                                    SizedBox(height: 4),
+                                    Icon(
                                       Icons.chevron_right,
-                                      color: Colors.grey,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                     ),
                                   ],
                                 ),
@@ -255,13 +266,13 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
         onPressed: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddBorrowedMoneyScreen()),
+            MaterialPageRoute(builder: (_) => AddBorrowedMoneyScreen()),
           );
           // Reload data when returning from add screen
           _loadData();
         },
-        icon: const Icon(Icons.add),
-        label: const Text('Add'),
+        icon: Icon(Icons.add),
+        label: Text('Add'),
         backgroundColor: AppTheme.primaryColor,
       ),
     );
@@ -285,12 +296,10 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryColor,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 ),
                 child: Row(
                   children: [
@@ -299,18 +308,21 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                       backgroundColor: Colors.white,
                       child: Text(
                         personName[0].toUpperCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryColor,
+                          color: AppTheme.readableColor(
+                            context,
+                            AppTheme.primaryColor,
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         personName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -318,7 +330,7 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
+                      icon: Icon(Icons.close, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
@@ -328,7 +340,7 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
               Expanded(
                 child: ListView.builder(
                   controller: scrollController,
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   itemCount: transactions.length,
                   itemBuilder: (context, index) {
                     final transaction = transactions[index];
@@ -351,9 +363,9 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
     final borrowedMoneyProvider = context.read<BorrowedMoneyProvider>();
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -365,25 +377,25 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                     children: [
                       Text(
                         '₹${transaction.amount.toStringAsFixed(0)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         DateFormat('MMM dd, yyyy').format(transaction.date),
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 // Status chip
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: transaction.isPaid
                         ? Colors.green.withOpacity(0.1)
@@ -403,13 +415,15 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
             ),
             if (transaction.description != null &&
                 transaction.description!.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 transaction.description!,
-                style: TextStyle(color: Colors.grey[700]),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -417,8 +431,8 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                 children: [
                   if (!transaction.isPaid)
                     TextButton.icon(
-                      icon: const Icon(Icons.check_circle, size: 16),
-                      label: const Text('Paid', style: TextStyle(fontSize: 13)),
+                      icon: Icon(Icons.check_circle, size: 16),
+                      label: Text('Paid', style: TextStyle(fontSize: 13)),
                       onPressed: () async {
                         // Close modal first
                         Navigator.pop(context);
@@ -435,7 +449,7 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
 
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text(
                                 'Marked as paid and added to expenses',
                               ),
@@ -447,8 +461,8 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                       },
                     ),
                   TextButton.icon(
-                    icon: const Icon(Icons.edit, size: 16),
-                    label: const Text('Edit', style: TextStyle(fontSize: 13)),
+                    icon: Icon(Icons.edit, size: 16),
+                    label: Text('Edit', style: TextStyle(fontSize: 13)),
                     onPressed: () async {
                       // Close modal first
                       Navigator.pop(context);
@@ -469,28 +483,28 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                     },
                   ),
                   TextButton.icon(
-                    icon: const Icon(Icons.delete, size: 16),
-                    label: const Text('Delete', style: TextStyle(fontSize: 13)),
+                    icon: Icon(Icons.delete, size: 16),
+                    label: Text('Delete', style: TextStyle(fontSize: 13)),
                     style: TextButton.styleFrom(foregroundColor: Colors.red),
                     onPressed: () async {
                       final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (ctx) => AlertDialog(
-                          title: const Text('Delete Transaction'),
-                          content: const Text(
+                          title: Text('Delete Transaction'),
+                          content: Text(
                             'Are you sure you want to delete this transaction?',
                           ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Cancel'),
+                              child: Text('Cancel'),
                             ),
                             TextButton(
                               onPressed: () => Navigator.pop(ctx, true),
                               style: TextButton.styleFrom(
                                 foregroundColor: Colors.red,
                               ),
-                              child: const Text('Delete'),
+                              child: Text('Delete'),
                             ),
                           ],
                         ),
@@ -504,9 +518,7 @@ class _BorrowedMoneyScreenState extends State<BorrowedMoneyScreen> {
                         if (context.mounted) {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Transaction deleted'),
-                            ),
+                            SnackBar(content: Text('Transaction deleted')),
                           );
                         }
                       }

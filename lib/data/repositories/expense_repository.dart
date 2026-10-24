@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:uuid/uuid.dart';
 import '../models/expense_model.dart';
 
 class ExpenseRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final _uuid = const Uuid();
+  final FirebaseFirestore _firestore;
+  ExpenseRepository({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   // Helper to get user's expenses subcollection
   CollectionReference _getUserExpensesCollection(String userId) {
@@ -19,12 +19,20 @@ class ExpenseRepository {
   // Add expense
   Future<String> addExpense(ExpenseModel expense) async {
     try {
-      final id = _uuid.v4();
-      final expenseWithId = expense.copyWith(id: id);
-
-      await _getUserExpensesCollection(
-        expense.userId,
-      ).doc(id).set(expenseWithId.toMap());
+      final id = expense.id;
+      final ref = _getUserExpensesCollection(expense.userId).doc(id);
+      if (expense.isIncome) {
+        await _firestore.runTransaction((tx) async {
+          final existing = await tx.get(ref);
+          if (existing.exists) return;
+          tx.set(ref, expense.toMap());
+          tx.update(ref.parent.parent!, {
+            'monthlyIncome': FieldValue.increment(expense.amount),
+          });
+        });
+      } else {
+        await ref.set(expense.toMap());
+      }
 
       return id;
     } catch (e) {
@@ -35,9 +43,22 @@ class ExpenseRepository {
   // Update expense
   Future<void> updateExpense(ExpenseModel expense) async {
     try {
-      await _getUserExpensesCollection(
-        expense.userId,
-      ).doc(expense.id).update(expense.toMap());
+      final ref = _getUserExpensesCollection(expense.userId).doc(expense.id);
+      await _firestore.runTransaction((tx) async {
+        final snapshot = await tx.get(ref);
+        if (!snapshot.exists) throw StateError('Transaction no longer exists');
+        final old = ExpenseModel.fromMap(
+          snapshot.data() as Map<String, dynamic>,
+        );
+        final difference =
+            (expense.isIncome ? expense.amount : 0.0) -
+            (old.isIncome ? old.amount : 0.0);
+        tx.update(ref, expense.toMap());
+        if (difference != 0)
+          tx.update(ref.parent.parent!, {
+            'monthlyIncome': FieldValue.increment(difference),
+          });
+      });
     } catch (e) {
       throw Exception('Failed to update expense: $e');
     }
@@ -46,7 +67,19 @@ class ExpenseRepository {
   // Delete expense
   Future<void> deleteExpense(String userId, String expenseId) async {
     try {
-      await _getUserExpensesCollection(userId).doc(expenseId).delete();
+      final ref = _getUserExpensesCollection(userId).doc(expenseId);
+      await _firestore.runTransaction((tx) async {
+        final snapshot = await tx.get(ref);
+        if (!snapshot.exists) return;
+        final old = ExpenseModel.fromMap(
+          snapshot.data() as Map<String, dynamic>,
+        );
+        tx.delete(ref);
+        if (old.isIncome)
+          tx.update(ref.parent.parent!, {
+            'monthlyIncome': FieldValue.increment(-old.amount),
+          });
+      });
     } catch (e) {
       throw Exception('Failed to delete expense: $e');
     }

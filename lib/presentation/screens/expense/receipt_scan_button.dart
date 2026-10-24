@@ -10,73 +10,61 @@ class ReceiptScanButton extends StatelessWidget {
 
   const ReceiptScanButton({super.key, required this.onDataExtracted});
 
-  Future<void> _scanReceipt(BuildContext context) async {
-    try {
-      // Show loading with proper constraints
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: Material(
-            color: Colors.transparent,
-            child: CircularProgressIndicator(),
-          ),
-        ),
-      );
+  Future<void> scanReceipt(BuildContext context) async {
+    BuildContext? loadingContext;
+    OCRService? service;
+    void closeLoading() {
+      if (loadingContext?.mounted == true) Navigator.pop(loadingContext!);
+      loadingContext = null;
+    }
 
-      // Pick image from camera
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
+    try {
+      final image = await ImagePicker().pickImage(
         source: ImageSource.camera,
         maxWidth: 1920,
         maxHeight: 1920,
         imageQuality: 85,
       );
-
-      if (!context.mounted) return;
-
-      if (image == null) {
-        // User cancelled
-        Navigator.pop(context); // Close loading
-        return;
-      }
-
-      // Extract data using OCR
-      final ocrService = OCRService();
-      final imageFile = File(image.path);
-      final ocrData = await ocrService.extractReceiptData(imageFile);
-      ocrService.dispose();
-
-      if (!context.mounted) return;
-      Navigator.pop(context); // Close loading
-
-      // Show result dialog for review
-      await showDialog(
+      if (!context.mounted || image == null) return;
+      showDialog<void>(
         context: context,
-        builder: (context) => OCRResultDialog(
-          ocrData: ocrData,
-          onApply: (editedData) {
-            onDataExtracted(editedData);
-          },
-        ),
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          loadingContext = dialogContext;
+          return const PopScope(
+            canPop: false,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        },
       );
-    } catch (e) {
+      service = OCRService();
+      final data = await service.extractReceiptData(File(image.path));
+      closeLoading();
       if (!context.mounted) return;
-      Navigator.pop(context); // Close loading if still showing
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error scanning receipt: $e'),
-          backgroundColor: Colors.red,
-        ),
+      await showDialog<void>(
+        context: context,
+        builder: (_) =>
+            OCRResultDialog(ocrData: data, onApply: onDataExtracted),
       );
+    } catch (_) {
+      closeLoading();
+      if (context.mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not scan the receipt. You can retry or enter the expense manually.',
+            ),
+          ),
+        );
+    } finally {
+      service?.dispose();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -88,40 +76,47 @@ class ReceiptScanButton extends StatelessWidget {
         border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
       ),
       child: InkWell(
-        onTap: () => _scanReceipt(context),
+        onTap: () => scanReceipt(context),
         borderRadius: BorderRadius.circular(12),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppTheme.primaryColor,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.document_scanner,
                 color: Colors.white,
                 size: 24,
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Scan Receipt',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     'Auto-extract amount & details',
-                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),

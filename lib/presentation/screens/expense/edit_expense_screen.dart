@@ -32,7 +32,7 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
     super.initState();
     // Pre-fill with existing expense data
     _amountController = TextEditingController(
-      text: widget.expense.amount.toStringAsFixed(0),
+      text: widget.expense.amount.toStringAsFixed(2),
     );
     _descriptionController = TextEditingController(
       text: widget.expense.description,
@@ -75,7 +75,8 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
     final categoryChanged = _selectedCategory != widget.expense.category;
     final amountIncreased = amount > widget.expense.amount;
 
-    if (budgetProvider.isZeroBudgetCategory(_selectedCategory) &&
+    if (!widget.expense.isIncome &&
+        budgetProvider.isZeroBudgetCategory(_selectedCategory) &&
         (categoryChanged || amountIncreased)) {
       // Show warning dialog
       final shouldContinue = await showDialog<bool>(
@@ -110,20 +111,8 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
 
       final authProvider = context.read<AuthProvider>();
 
-      if (widget.expense.isIncome) {
-        final user = authProvider.currentUser;
-        if (user != null) {
-          final difference = amount - widget.expense.amount;
-          if (difference != 0) {
-            final updatedUser = user.copyWith(
-              monthlyIncome: user.monthlyIncome + difference,
-            );
-            await authProvider.updateUser(updatedUser);
-          }
-        }
-      }
-
       await expenseProvider.updateExpense(updatedExpense);
+      if (widget.expense.isIncome) await authProvider.refreshUser();
 
       if (mounted) {
         Navigator.pop(context);
@@ -153,22 +142,24 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text(
+        title: Text(
           'Delete Transaction',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to delete this transaction? This action cannot be undone.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -181,26 +172,16 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
         final authProvider = context.read<AuthProvider>();
         final expenseProvider = context.read<ExpenseProvider>();
 
-        // Update user's remote monthlyIncome first, before deleting the resource
-        if (widget.expense.isIncome) {
-          final user = authProvider.currentUser;
-          if (user != null) {
-            final updatedUser = user.copyWith(
-              monthlyIncome: user.monthlyIncome - widget.expense.amount,
-            );
-            await authProvider.updateUser(updatedUser);
-          }
-        }
-
         await expenseProvider.deleteExpense(
           authProvider.currentUser!.id,
           widget.expense.id,
         );
+        if (widget.expense.isIncome) await authProvider.refreshUser();
 
         if (mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Transaction deleted'),
               backgroundColor: AppTheme.errorColor,
             ),
@@ -224,17 +205,17 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Update Transaction'),
+        title: Text('Update Transaction'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete, color: AppTheme.errorColor),
+            icon: Icon(Icons.delete, color: AppTheme.errorColor),
             onPressed: _isLoading ? null : _deleteExpense,
             tooltip: 'Delete',
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -244,11 +225,8 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: const InputDecoration(
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
                   labelText: 'Amount',
                   prefixText: '₹ ',
                   prefixStyle: TextStyle(
@@ -258,7 +236,7 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
                 ),
                 validator: Validators.validateAmount,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Category Dropdown (hide for income)
               if (!widget.expense.isIncome) ...[
@@ -266,37 +244,53 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
                   value:
                       AppConstants.expenseCategories.contains(_selectedCategory)
                       ? _selectedCategory
+                      : widget.expense.isIncome
+                      ? 'Income'
                       : AppConstants.expenseCategories.first,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Category',
                     prefixIcon: Icon(Icons.category),
                   ),
-                  items: AppConstants.expenseCategories.map((category) {
-                    final icon =
-                        AppConstants.categoryIcons[category] ?? Icons.help;
-                    final color =
-                        AppConstants.categoryColors[category] ?? Colors.grey;
+                  items:
+                      (widget.expense.isIncome
+                              ? [
+                                  'Income',
+                                  'Salary',
+                                  'Business',
+                                  'Interest',
+                                  'Gift',
+                                  'Other income',
+                                ]
+                              : AppConstants.expenseCategories)
+                          .map((category) {
+                            final icon =
+                                AppConstants.categoryIcons[category] ??
+                                Icons.help;
+                            final color =
+                                AppConstants.categoryColors[category] ??
+                                Colors.grey;
 
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Row(
-                        children: [
-                          Icon(icon, color: color, size: 20),
-                          const SizedBox(width: 12),
-                          Text(
-                            category,
-                            style: TextStyle(
-                              color:
-                                  Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                            return DropdownMenuItem(
+                              value: category,
+                              child: Row(
+                                children: [
+                                  Icon(icon, color: color, size: 20),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    category,
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Colors.white
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          })
+                          .toList(),
                   onChanged: (value) {
                     if (value != null) {
                       setState(() {
@@ -307,13 +301,13 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
                   validator: (value) =>
                       value == null ? 'Please select a category' : null,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
               ],
 
               // Description Field
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Description',
                   prefixIcon: Icon(Icons.description),
                 ),
@@ -321,13 +315,13 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
                 validator: (value) =>
                     Validators.validateRequired(value, 'Description'),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Date Picker
               InkWell(
                 onTap: _selectDate,
                 child: InputDecorator(
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Date',
                     prefixIcon: Icon(Icons.calendar_today),
                   ),
@@ -335,12 +329,12 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(DateFormat('MMM dd, yyyy').format(_selectedDate)),
-                      const Icon(Icons.arrow_drop_down),
+                      Icon(Icons.arrow_drop_down),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
+              SizedBox(height: 40),
 
               // Update Button
               SizedBox(
@@ -351,8 +345,8 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
                     backgroundColor: AppTheme.primaryColor,
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text(
                           'Update Transaction',
                           style: TextStyle(
                             fontSize: 16,

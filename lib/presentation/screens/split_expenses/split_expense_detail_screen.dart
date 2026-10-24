@@ -30,10 +30,10 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Expense Details'),
+        title: Text('Expense Details'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete),
+            icon: Icon(Icons.delete),
             onPressed: () => _deleteExpense(context),
           ),
         ],
@@ -44,7 +44,7 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
             // Header Card
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isFullySettled
@@ -62,39 +62,41 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
                 children: [
                   Text(
                     widget.expense.description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     DateFormat('MMM dd, yyyy').format(widget.expense.date),
-                    style: const TextStyle(color: Colors.white70),
+                    style: TextStyle(color: Colors.white),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     '₹${widget.expense.totalAmount.toStringAsFixed(0)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   if (isFullySettled)
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surface.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
@@ -116,7 +118,7 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
                   else
                     Text(
                       'Split between ${totalPeople + 1} people',
-                      style: const TextStyle(color: Colors.white70),
+                      style: TextStyle(color: Colors.white),
                     ),
                 ],
               ),
@@ -125,7 +127,7 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
             // Settlement Progress
             if (!isFullySettled)
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -137,22 +139,28 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.grey[700],
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         Text(
                           '$totalSettled / $totalPeople',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     LinearProgressIndicator(
                       value: totalPeople > 0 ? totalSettled / totalPeople : 0,
-                      backgroundColor: Colors.grey[300],
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         AppTheme.successColor,
                       ),
@@ -164,15 +172,15 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
 
             // People List
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Who Owes',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   ...widget.expense.splits.entries.map((entry) {
                     final friendId = entry.key;
                     final amount = entry.value;
@@ -185,7 +193,7 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
                     );
 
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: EdgeInsets.only(bottom: 12),
                       color: isSettled
                           ? AppTheme.successColor.withOpacity(0.1)
                           : null,
@@ -196,7 +204,7 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
                               : AppTheme.primaryColor,
                           child: Text(
                             friend.name.substring(0, 1).toUpperCase(),
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: Colors.white),
                           ),
                         ),
                         title: Text(
@@ -225,10 +233,10 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
                                 fontWeight: FontWeight.bold,
                                 color: isSettled
                                     ? AppTheme.successColor
-                                    : Colors.black,
+                                    : Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             if (!isSettled)
                               ElevatedButton(
                                 onPressed: () => _settleAmount(
@@ -239,18 +247,18 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
                                 ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.successColor,
-                                  padding: const EdgeInsets.symmetric(
+                                  padding: EdgeInsets.symmetric(
                                     horizontal: 16,
                                     vertical: 8,
                                   ),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Settle',
                                   style: TextStyle(color: Colors.white),
                                 ),
                               )
                             else
-                              const Icon(
+                              Icon(
                                 Icons.check_circle,
                                 color: AppTheme.successColor,
                               ),
@@ -277,21 +285,21 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Settlement'),
+        title: Text('Confirm Settlement'),
         content: Text(
           'Mark ₹${amount.toStringAsFixed(0)} from $friendName as settled?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.successColor,
             ),
-            child: const Text('Settle', style: TextStyle(color: Colors.white)),
+            child: Text('Settle', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -330,17 +338,17 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Expense?'),
-        content: const Text('This action cannot be undone'),
+        title: Text('Delete Expense?'),
+        content: Text('This action cannot be undone'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -360,7 +368,7 @@ class _SplitExpenseDetailScreenState extends State<SplitExpenseDetailScreen> {
           Navigator.pop(context);
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Expense deleted')));
+          ).showSnackBar(SnackBar(content: Text('Expense deleted')));
         }
       } catch (e) {
         if (mounted) {

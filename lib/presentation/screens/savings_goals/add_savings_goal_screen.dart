@@ -34,9 +34,9 @@ class _AddSavingsGoalScreenState extends State<AddSavingsGoalScreen> {
   Future<void> _selectTargetDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: DateTime.now().add(Duration(days: 365)),
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+      lastDate: DateTime.now().add(Duration(days: 365 * 10)),
     );
     if (picked != null) {
       setState(() {
@@ -57,7 +57,7 @@ class _AddSavingsGoalScreenState extends State<AddSavingsGoalScreen> {
       final savingsProvider = context.read<SavingsGoalProvider>();
 
       final goal = SavingsGoalModel(
-        id: const Uuid().v4(),
+        id: Uuid().v4(),
         userId: authProvider.currentUser!.id,
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim().isEmpty
@@ -75,7 +75,7 @@ class _AddSavingsGoalScreenState extends State<AddSavingsGoalScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Savings goal created!'),
             backgroundColor: AppTheme.successColor,
           ),
@@ -97,9 +97,9 @@ class _AddSavingsGoalScreenState extends State<AddSavingsGoalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Savings Goal')),
+      appBar: AppBar(title: Text('New Savings Goal')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -108,7 +108,7 @@ class _AddSavingsGoalScreenState extends State<AddSavingsGoalScreen> {
               // Goal Name
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Goal Name',
                   prefixIcon: Icon(Icons.flag),
                   hintText: 'e.g., Vacation to Bali',
@@ -120,17 +120,14 @@ class _AddSavingsGoalScreenState extends State<AddSavingsGoalScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Target Amount
               TextFormField(
                 controller: _targetAmountController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: const InputDecoration(
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
                   labelText: 'Target Amount',
                   prefixText: '₹ ',
                   prefixStyle: TextStyle(
@@ -149,17 +146,17 @@ class _AddSavingsGoalScreenState extends State<AddSavingsGoalScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Category
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Category',
                   prefixIcon: Icon(Icons.category),
                 ),
                 dropdownColor: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey[850]
+                    ? Theme.of(context).colorScheme.surface
                     : Colors.white,
                 style: TextStyle(
                   color: Theme.of(context).brightness == Brightness.dark
@@ -174,9 +171,9 @@ class _AddSavingsGoalScreenState extends State<AddSavingsGoalScreen> {
                       children: [
                         Text(
                           SavingsGoalCategories.emojis[category] ?? '🎯',
-                          style: const TextStyle(fontSize: 20),
+                          style: TextStyle(fontSize: 20),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         Text(category),
                       ],
                     ),
@@ -186,13 +183,13 @@ class _AddSavingsGoalScreenState extends State<AddSavingsGoalScreen> {
                   setState(() => _selectedCategory = value!);
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Target Date
               InkWell(
                 onTap: _selectTargetDate,
                 child: InputDecorator(
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Target Date (Optional)',
                     prefixIcon: Icon(Icons.calendar_today),
                     suffixIcon: Icon(Icons.arrow_drop_down),
@@ -207,19 +204,19 @@ class _AddSavingsGoalScreenState extends State<AddSavingsGoalScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Description
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Description (Optional)',
                   prefixIcon: Icon(Icons.notes),
                   hintText: 'Add details about your goal',
                 ),
                 maxLines: 3,
               ),
-              const SizedBox(height: 40),
+              SizedBox(height: 40),
 
               // Save Button
               SizedBox(
@@ -230,8 +227,8 @@ class _AddSavingsGoalScreenState extends State<AddSavingsGoalScreen> {
                     backgroundColor: AppTheme.primaryColor,
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text(
                           'Create Goal',
                           style: TextStyle(
                             fontSize: 16,

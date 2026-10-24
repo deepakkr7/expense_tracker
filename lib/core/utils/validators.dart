@@ -1,3 +1,5 @@
+import 'money.dart';
+
 class Validators {
   // Email validation
   static String? validateEmail(String? value) {
@@ -62,8 +64,8 @@ class Validators {
     }
 
     final amount = double.tryParse(value);
-    if (amount == null) {
-      return 'Please enter a valid number';
+    if (amount == null || !amount.isFinite || Money.parseMinor(value) == null) {
+      return 'Enter an amount with up to 2 decimal places';
     }
 
     if (amount <= 0) {

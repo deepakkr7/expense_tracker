@@ -1,3 +1,5 @@
+import '../../../data/models/payment_qr_data.dart';
+import '../expense/add_expense_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../data/services/qr_processor_service.dart';
@@ -36,29 +38,55 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
       // Show result dialog
       if (mounted) {
-        await showDialog(
+        await controller.stop();
+        if (!mounted) return;
+        final payment = await showDialog<PaymentQRData>(
           context: context,
           builder: (context) => QRResultDialog(qrData: qrData),
         );
+        if (!mounted) return;
+        if (payment != null) {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AddExpenseScreen(
+                initialAmount:
+                    payment.amount != null &&
+                        payment.amount!.isFinite &&
+                        payment.amount! > 0
+                    ? payment.amount
+                    : null,
+                initialDescription:
+                    payment.merchantName ??
+                    payment.transactionNote ??
+                    'UPI payment',
+              ),
+            ),
+          );
+        }
+        if (mounted) await controller.start();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error processing QR: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Color(0xFFB3261E),
           ),
         );
       }
     } finally {
-      setState(() {
-        isProcessing = false;
-      });
+      if (mounted) {
+        setState(() {
+          isProcessing = false;
+        });
+      }
     }
   }
 
   Future<void> _toggleFlash() async {
     await controller.toggleTorch();
+    if (!mounted) return;
     setState(() {
       isTorchOn = !isTorchOn;
     });
@@ -82,7 +110,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                 if (barcode.rawValue != null) {
                   // Show visual feedback
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text('QR Code detected! Processing...'),
                       duration: Duration(milliseconds: 500),
                     ),
@@ -95,7 +123,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           ),
 
           // Custom overlay
-          const QRScannerOverlay(),
+          QRScannerOverlay(),
 
           // Top buttons
           SafeArea(
@@ -107,11 +135,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                   // Close button
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 30,
-                    ),
+                    icon: Icon(Icons.close, color: Colors.white, size: 30),
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.black.withOpacity(0.5),
                     ),

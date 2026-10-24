@@ -89,7 +89,7 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
 
     if (_selectedFriendIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one friend')),
+        SnackBar(content: Text('Please select at least one friend')),
       );
       return;
     }
@@ -139,17 +139,17 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
 
         // Validate that there's a valid split (user share should be >= 0)
         if (userShare < 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invalid split amounts')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Invalid split amounts')));
           setState(() => _isLoading = false);
           return;
         }
       }
 
       final splitExpense = SplitExpenseModel(
-        id: const Uuid().v4(),
-        expenseId: const Uuid().v4(),
+        id: Uuid().v4(),
+        expenseId: Uuid().v4(),
         creatorId: authProvider.currentUser!.id,
         totalAmount: totalAmount,
         category: 'General',
@@ -178,7 +178,7 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
       if (userShare > 0) {
         final expenseProvider = context.read<ExpenseProvider>();
         final userExpense = ExpenseModel(
-          id: const Uuid().v4(),
+          id: Uuid().v4(),
           userId: authProvider.currentUser!.id,
           amount: userShare,
           category: 'General',
@@ -220,9 +220,9 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
     final groupProvider = context.watch<GroupProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Split Expense')),
+      appBar: AppBar(title: Text('Split Expense')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -232,11 +232,8 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: const InputDecoration(
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
                   labelText: 'Total Amount',
                   prefixText: '₹ ',
                   prefixStyle: TextStyle(
@@ -255,12 +252,12 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               // Description
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Description',
                   prefixIcon: Icon(Icons.description),
                   hintText: 'Dinner, Movie, etc.',
@@ -272,15 +269,15 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Group Selection
               if (groupProvider.groups.isNotEmpty) ...[
-                const Text(
+                Text(
                   'Quick Select Group',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -291,7 +288,7 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(group.emoji ?? '👥'),
-                          const SizedBox(width: 6),
+                          SizedBox(width: 6),
                           Text(group.name),
                         ],
                       ),
@@ -303,24 +300,26 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
               ],
 
               // Friend Selection
-              const Text(
+              Text(
                 'Split With',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
 
               if (friendProvider.friends.isEmpty)
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
+                  child: Text(
                     'No friends available. Add friends first from Friends & Groups screen.',
                     textAlign: TextAlign.center,
                   ),
@@ -352,17 +351,17 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
                   );
                 }),
 
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Split Method
-              const Text(
+              Text(
                 'Split Method',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
 
               SegmentedButton<String>(
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: 'equal',
                     label: Text('Equal'),
@@ -391,17 +390,17 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
               // Custom amounts
               if (_splitMethod == 'custom' &&
                   _selectedFriendIds.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                const Text(
+                SizedBox(height: 20),
+                Text(
                   'Enter amounts for each friend:',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 ...friendProvider.friends
                     .where((f) => _selectedFriendIds.contains(f.id))
                     .map((friend) {
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: EdgeInsets.only(bottom: 12),
                         child: TextFormField(
                           controller: _customAmountControllers[friend.id],
                           keyboardType: TextInputType.number,
@@ -426,10 +425,10 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
                         ),
                       );
                     }),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 // Show user's calculated share
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -447,8 +446,8 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
                             color: AppTheme.primaryColor,
                             size: 20,
                           ),
-                          const SizedBox(width: 8),
-                          const Text(
+                          SizedBox(width: 8),
+                          Text(
                             'Your share:',
                             style: TextStyle(
                               fontSize: 16,
@@ -462,7 +461,10 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryColor,
+                          color: AppTheme.readableColor(
+                            context,
+                            AppTheme.primaryColor,
+                          ),
                         ),
                       ),
                     ],
@@ -470,7 +472,7 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
                 ),
               ],
 
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
 
               // Save Button
               SizedBox(
@@ -481,8 +483,8 @@ class _CreateSplitExpenseScreenState extends State<CreateSplitExpenseScreen> {
                     backgroundColor: AppTheme.primaryColor,
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text(
                           'Split Expense',
                           style: TextStyle(
                             fontSize: 16,
