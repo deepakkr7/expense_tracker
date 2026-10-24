@@ -7,6 +7,51 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:325788297793:android:cab278cb7c9a4e1f3274c0",
+        "android_client_info": {
+          "package_name": "com.bytesforges.spendwise"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "325788297793-gdjtv39el0qenjvjjnrvqek4ak9r3sb3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bytesforges.spendwise",
+            "certificate_hash": "579d919882fad294ef4cca3765947c9637cdf262"
+          }
+        },
+        {
+          "client_id": "325788297793-k6kja3r4q4hi15i708m9omovdnna446o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bytesforges.spendwise",
+            "certificate_hash": "5ecad18eddb5c69c833f589a7b516f80bcda32d3"
+          }
+        },
+        {
+          "client_id": "325788297793-r1aslgr2u4g9t43fcgq5himbtkmqt2oa.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCD5A2PJT32Dg8wHf2EZWbvSqBBsNNYWf4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "325788297793-r1aslgr2u4g9t43fcgq5himbtkmqt2oa.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:325788297793:android:22387ca35c1876923274c0",
         "android_client_info": {
           "package_name": "com.example.expense_tracker"

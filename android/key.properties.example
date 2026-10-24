@@ -1,0 +1,6 @@
+# Copy to key.properties (ignored by Git). Paths resolve relative to android/.
+# Use forward slashes in Windows paths. Never commit the real file or keystore.
+storeFile=upload-keystore.jks
+storePassword=
+keyAlias=upload
+keyPassword=
